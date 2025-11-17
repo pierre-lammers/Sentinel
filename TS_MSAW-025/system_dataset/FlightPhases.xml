@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flightPhasesRoot xmlns="N_DATA_MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="N_DATA_MODEL FlightPhasesDM.xsd">
+  <flightPhaseDefinition id="APPROACH" description="Aircraft in approach phase">
+    <altitudeRange>
+      <minAltitude>0</minAltitude>
+      <maxAltitude>10000</maxAltitude>
+    </altitudeRange>
+    <verticalSpeedRange>
+      <minVerticalSpeed>-3000</minVerticalSpeed>
+      <maxVerticalSpeed>500</maxVerticalSpeed>
+    </verticalSpeedRange>
+  </flightPhaseDefinition>
+  <flightPhaseDefinition id="DEPARTURE" description="Aircraft in departure phase">
+    <altitudeRange>
+      <minAltitude>0</minAltitude>
+      <maxAltitude>15000</maxAltitude>
+    </altitudeRange>
+    <verticalSpeedRange>
+      <minVerticalSpeed>-500</minVerticalSpeed>
+      <maxVerticalSpeed>3000</maxVerticalSpeed>
+    </verticalSpeedRange>
+  </flightPhaseDefinition>
+  <flightPhaseDefinition id="CRUISE" description="Aircraft in cruise phase">
+    <altitudeRange>
+      <minAltitude>15000</minAltitude>
+      <maxAltitude>45000</maxAltitude>
+    </altitudeRange>
+    <verticalSpeedRange>
+      <minVerticalSpeed>-1000</minVerticalSpeed>
+      <maxVerticalSpeed>1000</maxVerticalSpeed>
+    </verticalSpeedRange>
+  </flightPhaseDefinition>
+</flightPhasesRoot>

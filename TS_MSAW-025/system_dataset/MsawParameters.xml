@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<msawParametersRoot xmlns="N_DATA_MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="N_DATA_MODEL MsawParametersDM.xsd">
+  <msawParametersGlobal status="OPERATIONAL" emergencyOverride="false">
+    <minClimbRate>500</minClimbRate>
+    <altitudeBufferFeet>200</altitudeBufferFeet>
+    <warningTimeSeconds>60</warningTimeSeconds>
+  </msawParametersGlobal>
+  <msawParametersGroup sectorId="SEC01">
+    <minimumSafeAltitude>3000</minimumSafeAltitude>
+    <altitudeQualityRequired>MEDIUM</altitudeQualityRequired>
+    <flightPhases>
+      <phase>APPROACH</phase>
+      <phase>DEPARTURE</phase>
+    </flightPhases>
+  </msawParametersGroup>
+  <msawParametersGroup sectorId="SEC02">
+    <minimumSafeAltitude>2500</minimumSafeAltitude>
+    <altitudeQualityRequired>MEDIUM</altitudeQualityRequired>
+    <flightPhases>
+      <phase>APPROACH</phase>
+      <phase>DEPARTURE</phase>
+    </flightPhases>
+  </msawParametersGroup>
+  <msawParametersGroup sectorId="SEC03">
+    <minimumSafeAltitude>4000</minimumSafeAltitude>
+    <altitudeQualityRequired>HIGH</altitudeQualityRequired>
+    <flightPhases>
+      <phase>APPROACH</phase>
+      <phase>DEPARTURE</phase>
+      <phase>CRUISE</phase>
+    </flightPhases>
+  </msawParametersGroup>
+</msawParametersRoot>

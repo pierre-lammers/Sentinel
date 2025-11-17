@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ntzAreasRoot xmlns="N_DATA_MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="N_DATA_MODEL NtzAreasDM.xsd">
+  <ntzArea name="ntz2" airportID="WSSS" activeFlag="false" upperAltitude="5000">
+    <polygonPoint>
+        <latitude>012041N</latitude>
+        <longitude>1035902E</longitude>
+    </polygonPoint>
+    <polygonPoint>
+        <latitude>012021N</latitude>
+        <longitude>1035949E</longitude>
+    </polygonPoint>
+    <polygonPoint>
+        <latitude>010911N</latitude>
+        <longitude>1035508E</longitude>
+    </polygonPoint>
+    <polygonPoint>
+        <latitude>010937N</latitude>
+        <longitude>1035418E</longitude>
+    </polygonPoint>
+  </ntzArea>
+</ntzAreasRoot>

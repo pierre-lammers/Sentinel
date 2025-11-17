@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(youtube-summarizer)",
+      "WebFetch(domain:youtu.be)",
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

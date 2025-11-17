@@ -1,0 +1,37 @@
+SKYRADAR-STCA-041: Suppression of STCA conflicts due to NTZ processing
+SSS: ATCS-SSS-REQ-005855
+Derived status partially
+Derived rationale Alert inhibition on approach with NOZ and NTZ Areas
+Safety impact false
+Verification method Test
+Verification level RL
+(SDS rules HLR_10) [cmats_snp] Partial derivation shall be avoided
+SKYRADAR shall flag STCA conflicts as suppressed for tracks located in NOZ if:
+• The associated NTZ area is active, and
+• The status of the NTZ areas manager is equal to OPERATIONAL, and
+• The heading gap between each aircraft and the runway axis is lower than CSP: MAX_DELTA_HEADING, and
+• The current distance between the aircraft is kept above VSP: MinimalDistance known as safety distance, and
+• Each track is located within a different NOZ associated with an offline defined "parallel approach pair" of
+runways, and
+• The "parallel approach pair" is in INDEPENDENT mode, and
+• The flag STCA_PARALLEL_APP_FPL_CHECK_FLAG is set to false or the runway of each track's coupled
+FPL (if assigned) matches the runway linked to the NOZ where the track is located.
+
+================================================================================
+
+SKYRADAR-MSAW-025: Generation of Minimum Safe Altitude Warning alerts
+SSS: ATCS-SSS-REQ-006142
+Derived status partially
+Derived rationale Terrain clearance monitoring for approach and departure operations
+Safety impact true
+Verification method Test
+Verification level RL
+(SDS rules HLR_15) [cmats_snp] Partial derivation shall be avoided
+SKYRADAR shall generate MSAW (Minimum Safe Altitude Warning) alerts for tracks if ALL of the following conditions are met:
+• The MSAW system status is equal to OPERATIONAL, and
+• The track altitude is below the MSA (Minimum Safe Altitude) threshold defined for the current sector, and
+• The track is in APPROACH or DEPARTURE flight phase, and
+• The track vertical speed indicates descent or level flight (not climbing above VSP: MIN_CLIMB_RATE), and
+• The track is located within a monitored airspace zone where MSAW is active, and
+• The track has valid altitude data with quality indicator equal to HIGH or MEDIUM, and
+• The flag MSAW_EMERGENCY_OVERRIDE is set to false or the track's transponder squawk code is NOT in the emergency range (7500, 7600, 7700).

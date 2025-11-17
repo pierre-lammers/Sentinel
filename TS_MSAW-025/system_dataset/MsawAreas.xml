@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<msawAreasRoot xmlns="N_DATA_MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="N_DATA_MODEL MsawAreasDM.xsd">
+  <msawArea name="APPROACH_ZONE_01" sectorId="SEC01" isActive="true">
+    <minSafeAltitude>3000</minSafeAltitude>
+    <polygonPoint>
+      <x>-20</x>
+      <y>-10</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>20</x>
+      <y>-10</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>20</x>
+      <y>-40</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>-20</x>
+      <y>-40</y>
+    </polygonPoint>
+  </msawArea>
+  <msawArea name="DEPARTURE_ZONE_01" sectorId="SEC02" isActive="true">
+    <minSafeAltitude>2500</minSafeAltitude>
+    <polygonPoint>
+      <x>-20</x>
+      <y>10</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>20</x>
+      <y>10</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>20</x>
+      <y>40</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>-20</x>
+      <y>40</y>
+    </polygonPoint>
+  </msawArea>
+  <msawArea name="TMA_ZONE" sectorId="SEC03" isActive="false">
+    <minSafeAltitude>4000</minSafeAltitude>
+    <polygonPoint>
+      <x>-50</x>
+      <y>-50</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>50</x>
+      <y>-50</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>50</x>
+      <y>50</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>-50</x>
+      <y>50</y>
+    </polygonPoint>
+  </msawArea>
+</msawAreasRoot>

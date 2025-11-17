@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_STCA-041-01"
+			testTitle="Suppression of STCA conflicts due to NTZ processing (associated NTZ is inactive)"
+			testObjective="This test checks that SKYRADAR does not flag alerts as suppressed when NTZ (Non Transgression Zone) associated to the track is inactive.&#xa;
+			Conditions for STCA suppression due to NTZ are:&#xa;
+1) The associated NTZ area is active. &#xa;
+2) The status of the NTZ areas manager is equal to AVAILABLE. &#xa;
+3) Heading gap between each aircraft and the runway axis is lower than a CSP: MAX_DELTA_HEADING = 20 degrees. &#xa;
+4) Current distance between the aircraft is kept above a VSP: MinimalDistance=0. &#xa;
+5) Each track is located within a different NOZ associated with an offline defined parallel approach pair of runways. &#xa;
+6) The parallel approach pair is in INDEPENDENT mode. &#xa;
+7) The flag STCA_PARALLEL_APP_FPL_CHECK_FLAG is set to false or the runway of each track coupled FPL (if assigned) matches the runway linked to the NOZ where the track is located.;&#xa;
+- 1st step defines an offline NTZ area set to inactive, this should NOT suppress the raised STCA conflict.&#xa;
+- In 2nd step, the NTZ area is set to active, this should suppress the raised STCA conflict.&#xa;
+- In 3rd step, the NTZ area is set back to inactive, this should NOT suppress the raised STCA conflict.&#xa;
+
+CSP: MAX_DELTA_HEADING=20 degree and VSP: MinimalDistance=0. STCA_PARALLEL_APP_FPL_CHECK_FLAG = true.  parallelApproachPair::modeOnStartup=INDEPENDENT.&#xa;
+All conditions, except the 1st one, are met to suppress STCA conflict due to NTZ processing."
+			requirement1="SKYRADAR-STCA-041" requirementCMATS1="SKYRADAR-STCA-041"
+			historyDate1="11/03/2022"
+			historyDate2="23/05/2024"
+			historyDate3="25/08/2025"
+			historyEcrId1="CMATS_ISD63"
+			historyEcrId2="FRSKYRADAR-5251"
+			historyEcrId3="FRSKYRADAR-7459"
+			historyVersion1="3.0"
+			actionComment="2 tracks are located in their respective NOZ and are also close enough to generate a STCA conflict. NTZ areas manager is set to true via a specific online command at time 7."
+			actionDescription="2 tracks are close enough to generate a STCA conflict. All the conditions to suppress the STCA conflict are fulfilled except the first one (NTZ is inactive for this step).&#xa;
+			As a result a STCA conflict should be raised with no suppressed status.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="AMS01" cfl="0" cflUnity="F" arrivalRwy="02L" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+	<FlightPlanUpdate recNum="2" time="2" callsign="AMS02" cfl="0" cflUnity="F" arrivalRwy="02R" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="3" callsign="AMS01" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+	<IdentUpdate recNum="2" time="4" callsign="AMS02" couplingStatus="AUTO" fplNum="2" sysTrackNum="2"/>
+
+	<TrackUpdates time="6">
+		<TrackUpdate trackNumber="1" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="29.5" cartSpeedX="110" cartSpeedY="0" identStr="1" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AMS01" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+		<TrackUpdate trackNumber="2" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="27.5" cartSpeedX="110" cartSpeedY="0" identStr="2" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AMS02" ifpsFlightId="2" airportArr="WSSS" flightCatFr1Fr2="0" runway="02R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<BnsUpdate time="7">
+		<BnsPRM status="AVAILABLE"/>
+	</BnsUpdate>
+
+	<TestResult resultTimeInMilliSec="10000" resultDescription="A STCA conflict is raised with no suppressed status."
+				nextActionComment="In order to simulate an update of the NTZ datapage by the PRM instance, a NTZ datapage update is sent at time 12 in which NTZ area is set to active.&#xa;
+				Tracks are positioned in order to generate a STCA conflict."
+				nextActionDescription="The 2 tracks should generate a STCA conflict and an update of the NTZ datapage sets the NTZ to active. This configuration should allow SKYRADAR to generate a STCA conflict with suppressed status.">
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cdc>
+				<CdcSTCA trackNum2="2" conflictStatus="REAL"/>
+			</Cdc>
+		</Alerts>
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cat004>
+				<Cat004STCA alertStatus="OUT_REAL" trackNum2="2"/>
+			</Cat004>
+		</Alerts>
+	</TestResult>
+
+	<DatapageNtzUpdate time="12">
+		<NTZAreaDatapageUpdate>
+			<NTZAreaElement isActive="true" name="ntz2"/>
+		</NTZAreaDatapageUpdate>
+	</DatapageNtzUpdate>
+
+	<TrackUpdates time="13">
+		<TrackUpdate trackNumber="1" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="29.5" cartSpeedX="110" cartSpeedY="0" identStr="1" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AMS01" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+		<TrackUpdate trackNumber="2" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="27.5" cartSpeedX="110" cartSpeedY="0" identStr="2" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AMS02" ifpsFlightId="2" airportArr="WSSS" flightCatFr1Fr2="0" runway="02R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="13000" resultDescription="A STCA conflict is raised with suppressed status."
+				nextActionComment="In order to simulate an update of the NTZ datapage by the PRM instance, a NTZ datapage update is sent at time 16 in which NTZ area is set back to inactive.&#xa;
+				Tracks are positioned in order to generate a STCA conflict."
+				nextActionDescription="The 2 tracks should generate a STCA conflict and an update of the NTZ datapage sets the NTZ to inactive. This configuration should allow SKYRADAR to generate a STCA conflict without suppressed status.">
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="true" >
+			<Cdc>
+				<CdcSTCA trackNum2="2" conflictStatus="REAL" inhibReason="NOZ"/>
+			</Cdc>
+		</Alerts>
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="true">
+			<Cat004>
+				<Cat004STCA alertStatus="OUT_REAL" trackNum2="2"/>
+			</Cat004>
+		</Alerts>
+	</TestResult>
+
+	<DatapageNtzUpdate time="16">
+		<NTZAreaDatapageUpdate>
+			<NTZAreaElement isActive="false" name="ntz2"/>
+		</NTZAreaDatapageUpdate>
+	</DatapageNtzUpdate>
+
+	<TrackUpdates time="18">
+		<TrackUpdate trackNumber="1" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="29.5" cartSpeedX="110" cartSpeedY="0" identStr="1" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AMS01" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+		<TrackUpdate trackNumber="2" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="27.5" cartSpeedX="110" cartSpeedY="0" identStr="2" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AMS02" ifpsFlightId="2" airportArr="WSSS" flightCatFr1Fr2="0" runway="02R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="18000" resultDescription="A STCA conflict is raised without suppressed status." >
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cdc>
+				<CdcSTCA trackNum2="2" conflictStatus="REAL"/>
+			</Cdc>
+		</Alerts>
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cat004>
+				<Cat004STCA alertStatus="OUT_REAL" trackNum2="2"/>
+			</Cat004>
+		</Alerts>
+	</TestResult>
+</UpdateRoot>
