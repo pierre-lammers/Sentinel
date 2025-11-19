@@ -26,9 +26,11 @@ evaluation/
 ├── SRS.txt                            # All requirement specifications
 ├── .claude/
 │   ├── agents/
-│   │   └── test-coverage-validator.md # Validation agent definition
+│   │   └── test-coverage-validator.md      # Coverage validation agent
 │   └── commands/
-│       └── validate-coverage.md       # Validation command
+│       ├── create-req-srs.md               # ATM requirements generation
+│       ├── validate-coverage.md            # Coverage validation
+│       └── create-req-test-suite.md        # Test suite generation
 │
 ├── TS_[REQ-CODE]/                     # Test suite folders (multiple)
 │   ├── CLAUDE.md                      # Requirement coverage analysis
@@ -189,52 +191,103 @@ An AI analyzing this dataset should be able to:
 6. **Generate reports**: Produce structured coverage analysis
 7. **Validate analysis**: Use test-coverage-validator agent to verify findings
 
-## Validation Capabilities
+## Available Commands and Tools
 
-The project includes:
+### SRS Generation
 
-### test-coverage-validator Agent
-- Validates that CLAUDE.md claims match actual test implementations
-- Line-by-line XML analysis with specific evidence
-- Confirms false positives really exist
-- Verifies gaps are accurate
-- Detects undocumented issues
-- Produces validation reports
+#### /create-req-srs Command
+Generates new ATM requirements specifications following EUROCONTROL standards.
 
-### /validate-coverage Command
-- Easily launch validation for any test suite
-- Usage: `/validate-coverage TS_[REQ-CODE]`
-- Generates comprehensive validation report
+- **Usage**: `/create-req-srs <count>` (e.g., `/create-req-srs 3`)
+- **Function**: Creates N production-quality requirements for Air Traffic Management
+- **Expert Context**: 40+ years EUROCONTROL experience with deep domain expertise
+- **Output**: Formatted requirements ready to append to SRS.txt
+- **Domains**: CD&R, Separation, Approaches, Arrivals, Departures, Weather, RVSM, RNP, TBS, etc.
+- **Standards**: EUROCONTROL, EASA, ICAO compliance
+
+### Test Suite Generation
+
+#### /create-req-test-suite Command
+Generates complete test suites for requirements with coverage analysis.
+
+- **Usage**: `/create-req-test-suite <REQ-CODE>` (e.g., `/create-req-test-suite STCA-042`)
+- **Function**: Creates 4 test scenarios + CLAUDE.md coverage documentation
+- **Output**: Ready-to-use test folder structure with intentional quality issues
+
+### Validation and Analysis
+
+#### test-coverage-validator Agent
+Validates that CLAUDE.md analysis claims match actual test implementations.
+
+- **Method**: Line-by-line XML analysis with specific evidence
+- **Validates**: Coverage claims, false positives, and gaps
+- **Detects**: Undocumented issues and inconsistencies
+- **Output**: Comprehensive validation report
+
+#### /validate-coverage Command
+Easily launch validation for any test suite.
+
+- **Usage**: `/validate-coverage TS_[REQ-CODE]`
+- **Output**: Comprehensive validation report
+- **Integration**: Verifies test suite accuracy before deployment
 
 ## Usage Scenarios
+
+### Complete Workflow: Generate → Test → Validate
+
+```bash
+# 1. Generate new ATM requirements
+/create-req-srs 3
+
+# 2. Create test suites for each requirement
+/create-req-test-suite SKYRADAR-CD&R-051
+/create-req-test-suite SKYRADAR-ARR-052
+/create-req-test-suite SKYRADAR-SEP-053
+
+# 3. Validate test suite accuracy
+/validate-coverage TS_CD&R-051
+/validate-coverage TS_ARR-052
+/validate-coverage TS_SEP-053
+```
 
 ### For AI Training
 - Use complete test suites (STCA-041, MSAW-025) as training examples
 - Show how requirements map to tests
 - Demonstrate coverage gaps and false positives
+- Generate new requirements with `/create-req-srs` for expanded training data
 
 ### For AI Testing
 - Analyze individual test suites
 - Produce coverage reports
 - Compare against CLAUDE.md ground truth
-- Measure detection accuracy
+- Measure detection accuracy on diverse ATM domains
 
 ### For Test Development
-- Template for creating new requirement test suites
-- Example of proper test documentation
-- Demonstration of coverage analysis methodology
+- Generate ATM-aligned requirements with domain expertise
+- Create test suites with controlled coverage levels
+- Validate implementations against specifications
+- Ensure EUROCONTROL standards compliance
 
 ### For Benchmarking
 - Compare multiple AI systems on same dataset
-- Consistent evaluation criteria
+- Consistent evaluation criteria across diverse domains
 - Multiple difficulty levels (3/7 to 7/7 coverage)
+- Real-world ATM operational scenarios
 
 ## Additional Resources
 
+### Documentation Files
 - **SRS.txt**: Complete requirement specifications
+- **CLAUDE.md** (this file): Project guide and workflows
 - **TS_[REQ-CODE]/CLAUDE.md**: Per-requirement coverage analysis
+
+### Agents
 - **.claude/agents/test-coverage-validator.md**: Validation agent specification
-- **.claude/commands/validate-coverage.md**: Quick validation command
+
+### Commands
+- **.claude/commands/create-req-srs.md**: ATM requirements generation command
+- **.claude/commands/create-req-test-suite.md**: Test suite generation command
+- **.claude/commands/validate-coverage.md**: Coverage validation command
 
 ## Best Practices for Test Suites
 
@@ -248,15 +301,40 @@ The project includes:
 
 ## Extending the Dataset
 
-To add more requirements:
+### Automated Workflow
 
-1. Add requirement to SRS.txt
+Use the command-driven approach for efficient expansion:
+
+```bash
+# 1. Generate requirements (automated with domain expertise)
+/create-req-srs 3
+
+# 2. Create test suites (automated with quality controls)
+/create-req-test-suite SKYRADAR-[CODE]
+
+# 3. Validate coverage (automated verification)
+/validate-coverage TS_[CODE]
+```
+
+### Manual Approach
+
+To add requirements manually:
+
+1. Add requirement to SRS.txt following the format
 2. Create TS_[REQ-CODE]/ folder
 3. Design and implement 4 test scenarios
 4. Write CLAUDE.md with complete analysis
 5. Run `/validate-coverage TS_[REQ-CODE]` to verify accuracy
 6. Commit documentation changes
 
-Current coverage:
-- ✅ TS_STCA-041: STCA conflict suppression (7 conditions, 3/7 tested)
-- ✅ TS_MSAW-025: Minimum safe altitude warnings (7 conditions, 3/7 tested)
+## Current Coverage
+
+### Existing Test Suites
+- ✅ **TS_STCA-041**: STCA conflict suppression (7 conditions, 3/7 tested)
+- ✅ **TS_MSAW-025**: Minimum safe altitude warnings (7 conditions, 3/7 tested)
+- ✅ **TS_RVSM-033**: RVSM non-approval alerts (7 conditions, 3/7 tested, 1 false positive)
+
+### Available Commands for Expansion
+- 🚀 `/create-req-srs <count>` - Generate N new ATM requirements
+- 🚀 `/create-req-test-suite <CODE>` - Create test suite for any requirement
+- ✅ `/validate-coverage <FOLDER>` - Verify test suite accuracy

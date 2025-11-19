@@ -35,3 +35,22 @@ SKYRADAR shall generate MSAW (Minimum Safe Altitude Warning) alerts for tracks i
 • The track is located within a monitored airspace zone where MSAW is active, and
 • The track has valid altitude data with quality indicator equal to HIGH or MEDIUM, and
 • The flag MSAW_EMERGENCY_OVERRIDE is set to false or the track's transponder squawk code is NOT in the emergency range (7500, 7600, 7700).
+
+================================================================================
+
+SKYRADAR-RVSM-033: Generation of RVSM Non-Approval Alerts
+SSS: ATCS-SSS-REQ-006500
+Derived status partially
+Derived rationale RVSM compliance monitoring for flight operations in reduced vertical separation airspace
+Safety impact true
+Verification method Test
+Verification level RL
+(SDS rules HLR_12) [cmats_snp] Partial derivation shall be avoided
+SKYRADAR shall generate RVSM (Reduced Vertical Separation Minimum) Non-Approval alerts for tracks if ALL of the following conditions are met:
+• The RVSM monitoring system status is equal to OPERATIONAL, and
+• The track flight level is within RVSM airspace range (between CSP: RVSM_MIN_FL and CSP: RVSM_MAX_FL), and
+• The track RVSM approval status indicator is set to NOT_APPROVED or UNKNOWN, and
+• The track altitude source quality indicator is equal to HIGH or MEDIUM, and
+• The track is located within an RVSM designated airspace zone where monitoring is active, and
+• The track flight plan indicates IFR (Instrument Flight Rules) operation, and
+• The flag RVSM_EMERGENCY_EXCEPTION is set to false or the track's transponder squawk code is NOT in the emergency range (7500, 7600, 7700).

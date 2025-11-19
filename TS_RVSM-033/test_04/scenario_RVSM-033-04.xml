@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_RVSM-033-04"
+			testTitle="Generation of RVSM Non-Approval alerts (RVSM system operational transition)"
+			testObjective="This test verifies that SKYRADAR properly generates RVSM Non-Approval alerts when RVSM monitoring system transitions from STANDBY to OPERATIONAL status.&#xa;
+			Conditions for RVSM Non-Approval alert generation are:&#xa;
+1) The RVSM monitoring system status is equal to OPERATIONAL. &#xa;
+2) The track flight level is within RVSM airspace range (between RVSM_MIN_FL=290 and RVSM_MAX_FL=410). &#xa;
+3) The track RVSM approval status indicator is set to NOT_APPROVED or UNKNOWN. &#xa;
+4) The track altitude source quality indicator is equal to HIGH or MEDIUM. &#xa;
+5) The track is located within an RVSM designated airspace zone where monitoring is active. &#xa;
+6) The track flight plan indicates IFR operation. &#xa;
+7) The flag RVSM_EMERGENCY_EXCEPTION is set to false or the track squawk code is NOT emergency (7500/7600/7700).&#xa;
+- 1st step: RVSM system status is STANDBY, no RVSM alert should be generated.&#xa;
+- 2nd step: RVSM system status is set to OPERATIONAL, RVSM alert should be generated."
+			requirement1="SKYRADAR-RVSM-033" requirementCMATS1="SKYRADAR-RVSM-033"
+			historyDate1="18/11/2025"
+			historyEcrId1="CMATS_ISD95"
+			historyVersion1="5.0"
+			actionComment="Track is located in RVSM airspace at FL340 with RVSM approval NOT_APPROVED. RVSM monitoring system starts in STANDBY status."
+			actionDescription="Track meets all conditions for RVSM Non-Approval alert except system status is STANDBY. No alert should be generated in baseline phase.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="QTR909" cfl="340" cflUnity="F" arrivalRwy="34L" arrivalAirport="OTHH" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="QTR909" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<RvsmSystemUpdate time="3">
+		<RvsmStatus status="STANDBY" emergencyException="false" minFlightLevel="290" maxFlightLevel="410"/>
+	</RvsmSystemUpdate>
+
+	<TrackUpdates time="5">
+		<TrackUpdate trackNumber="1" measFlightLevel="340" measFlightLevelAge="0" posX="110" posY="130" cartSpeedX="190" cartSpeedY="95" identStr="1" baroAltitude="34000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" rvsmApprovalStatus="NOT_APPROVED" flightPhase="CRUISE">
+			<Mode3A value="5421"/>
+			<FlightPlan callsign="QTR909" ifpsFlightId="1" airportArr="OTHH" flightCatFr1Fr2="0" runway="34L" flightRules="I"/>
+			<Ident sac="118" sic="228"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="8000" resultDescription="No RVSM alert is generated because RVSM system status is STANDBY (not OPERATIONAL)."
+				nextActionComment="RVSM monitoring system is set to OPERATIONAL status at time 12. Track continues at FL340 with RVSM approval NOT_APPROVED."
+				nextActionDescription="RVSM system becomes OPERATIONAL. This should trigger a RVSM Non-Approval alert.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- FALSE POSITIVE INTENTIONAL: The RvsmSystemUpdate that should change status to OPERATIONAL is MISSING! -->
+	<!-- This is the hidden flaw: no status change occurs between baseline and verification -->
+
+	<TrackUpdates time="13">
+		<TrackUpdate trackNumber="1" measFlightLevel="340" measFlightLevelAge="0" posX="115" posY="135" cartSpeedX="190" cartSpeedY="95" identStr="1" baroAltitude="34000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" rvsmApprovalStatus="NOT_APPROVED" flightPhase="CRUISE">
+			<Mode3A value="5421"/>
+			<FlightPlan callsign="QTR909" ifpsFlightId="1" airportArr="OTHH" flightCatFr1Fr2="0" runway="34L" flightRules="I"/>
+			<Ident sac="118" sic="228"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="15000" resultDescription="RVSM alert is generated because RVSM system is OPERATIONAL and aircraft is NOT_APPROVED in RVSM airspace.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="true">
+			<RvsmAlert severity="WARNING" approvalStatus="NOT_APPROVED" currentFL="340" rvsmMinFL="290" rvsmMaxFL="410" zone="RVSM_ZONE_ALPHA"/>
+		</Alerts>
+	</TestResult>
+</UpdateRoot>

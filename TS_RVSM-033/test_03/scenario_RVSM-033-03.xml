@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_RVSM-033-03"
+			testTitle="Generation of RVSM Non-Approval alerts (RVSM approval status validation)"
+			testObjective="This test checks that SKYRADAR generates RVSM Non-Approval alerts only for aircraft with NOT_APPROVED or UNKNOWN RVSM approval status.&#xa;
+			Conditions for RVSM Non-Approval alert generation are:&#xa;
+1) The RVSM monitoring system status is equal to OPERATIONAL. &#xa;
+2) The track flight level is within RVSM airspace range (between RVSM_MIN_FL=290 and RVSM_MAX_FL=410). &#xa;
+3) The track RVSM approval status indicator is set to NOT_APPROVED or UNKNOWN. &#xa;
+4) The track altitude source quality indicator is equal to HIGH or MEDIUM. &#xa;
+5) The track is located within an RVSM designated airspace zone where monitoring is active. &#xa;
+6) The track flight plan indicates IFR operation. &#xa;
+7) The flag RVSM_EMERGENCY_EXCEPTION is set to false or the track squawk code is NOT emergency (7500/7600/7700).&#xa;
+- 1st step: RVSM approval status is APPROVED, no RVSM alert should be generated.&#xa;
+- 2nd step: RVSM approval status changes to NOT_APPROVED, RVSM alert should be generated.&#xa;
+- 3rd step: RVSM approval status changes to UNKNOWN, RVSM alert should still be generated.&#xa;
+- 4th step: RVSM approval status changes back to APPROVED, no RVSM alert should be generated."
+			requirement1="SKYRADAR-RVSM-033" requirementCMATS1="SKYRADAR-RVSM-033"
+			historyDate1="18/11/2025"
+			historyEcrId1="CMATS_ISD95"
+			historyVersion1="5.0"
+			actionComment="Track is located in RVSM airspace at FL370. RVSM monitoring system is OPERATIONAL. Initial RVSM approval status is APPROVED."
+			actionDescription="Track meets all conditions for RVSM Non-Approval alert except RVSM approval status is APPROVED. No alert should be generated.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="SIA888" cfl="370" cflUnity="F" arrivalRwy="02C" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="SIA888" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<RvsmSystemUpdate time="3">
+		<RvsmStatus status="OPERATIONAL" emergencyException="false" minFlightLevel="290" maxFlightLevel="410"/>
+	</RvsmSystemUpdate>
+
+	<TrackUpdates time="5">
+		<TrackUpdate trackNumber="1" measFlightLevel="370" measFlightLevelAge="0" posX="80" posY="100" cartSpeedX="220" cartSpeedY="110" identStr="1" baroAltitude="37000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" rvsmApprovalStatus="APPROVED" flightPhase="CRUISE">
+			<Mode3A value="4532"/>
+			<FlightPlan callsign="SIA888" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02C" flightRules="I"/>
+			<Ident sac="118" sic="227"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="7000" resultDescription="No RVSM alert is generated because RVSM approval status is APPROVED."
+				nextActionComment="RVSM approval status changes to NOT_APPROVED at time 10. Track continues at FL370 in RVSM airspace."
+				nextActionDescription="RVSM approval status becomes NOT_APPROVED. This should trigger a RVSM Non-Approval alert.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<TrackUpdates time="10">
+		<TrackUpdate trackNumber="1" measFlightLevel="370" measFlightLevelAge="0" posX="85" posY="105" cartSpeedX="220" cartSpeedY="110" identStr="1" baroAltitude="37000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" rvsmApprovalStatus="NOT_APPROVED" flightPhase="CRUISE">
+			<Mode3A value="4532"/>
+			<FlightPlan callsign="SIA888" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02C" flightRules="I"/>
+			<Ident sac="118" sic="227"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="12000" resultDescription="RVSM alert is generated because RVSM approval status is NOT_APPROVED in RVSM airspace."
+				nextActionComment="RVSM approval status changes to UNKNOWN at time 15. Track continues at FL370."
+				nextActionDescription="RVSM approval status becomes UNKNOWN. RVSM alert should continue to be generated.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="true">
+			<RvsmAlert severity="WARNING" approvalStatus="NOT_APPROVED" currentFL="370" rvsmMinFL="290" rvsmMaxFL="410" zone="RVSM_ZONE_ALPHA"/>
+		</Alerts>
+	</TestResult>
+
+	<TrackUpdates time="15">
+		<TrackUpdate trackNumber="1" measFlightLevel="370" measFlightLevelAge="0" posX="90" posY="110" cartSpeedX="220" cartSpeedY="110" identStr="1" baroAltitude="37000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" rvsmApprovalStatus="UNKNOWN" flightPhase="CRUISE">
+			<Mode3A value="4532"/>
+			<FlightPlan callsign="SIA888" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02C" flightRules="I"/>
+			<Ident sac="118" sic="227"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="17000" resultDescription="RVSM alert is generated because RVSM approval status is UNKNOWN in RVSM airspace."
+				nextActionComment="RVSM approval status changes back to APPROVED at time 20. Track continues at FL370."
+				nextActionDescription="RVSM approval status becomes APPROVED. RVSM alert should be cleared.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="true">
+			<RvsmAlert severity="WARNING" approvalStatus="UNKNOWN" currentFL="370" rvsmMinFL="290" rvsmMaxFL="410" zone="RVSM_ZONE_ALPHA"/>
+		</Alerts>
+	</TestResult>
+
+	<TrackUpdates time="20">
+		<TrackUpdate trackNumber="1" measFlightLevel="370" measFlightLevelAge="0" posX="95" posY="115" cartSpeedX="220" cartSpeedY="110" identStr="1" baroAltitude="37000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" rvsmApprovalStatus="APPROVED" flightPhase="CRUISE">
+			<Mode3A value="4532"/>
+			<FlightPlan callsign="SIA888" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02C" flightRules="I"/>
+			<Ident sac="118" sic="227"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="22000" resultDescription="No RVSM alert is generated because RVSM approval status is APPROVED.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+</UpdateRoot>
