@@ -1,0 +1,5 @@
+# Ignore .env files anywhere
+**/.env
+
+# Ignore virtualenv directories named "venv" anywhere (and their contents)
+**/venv/
