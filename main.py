@@ -1,0 +1,27 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from pipeline import model as md
+from pipeline.agents import supervisor as sp
+
+"""
+.env : 
+
+you must defined in your .env 
+
+- GOOGLE_API_KEY 
+- SRS_PATH (the pdf path)
+- AGENTS_PATH (the yaml path)
+
+"""
+
+# Get the llm model
+llm = md.get_llm()
+
+# Create the supervisor instance
+supervisor = sp.Supervisor.create(llm) 
+
+# invoke him !
+response = supervisor.invoke("Give me the requirement that talks about suppression of STCA conﬂicts.")
+print(response)

@@ -1,0 +1,5 @@
+active_agents:
+  - name: Rag_Agent
+    description: Utilise cet outil pour toutes les requêtes basées sur des documents techniques. Il fournit des réponses contextuelles.
+    middleware_func: prompt_with_context
+    tools: []
