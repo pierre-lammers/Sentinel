@@ -11,8 +11,8 @@
 5) The track is located within a monitored airspace zone where MSAW is active. &#xa;
 6) The track has valid altitude data with quality indicator equal to HIGH or MEDIUM. &#xa;
 7) The flag MSAW_EMERGENCY_OVERRIDE is set to false or the track squawk code is NOT emergency (7500/7600/7700).&#xa;
-- 1st step: track altitude is ABOVE MSA (3500ft > 3000ft MSA), no MSAW alert should be generated.&#xa;
-- 2nd step: track altitude is BELOW MSA (2500ft < 3000ft MSA), MSAW alert should be generated.&#xa;
+- 1st step: track altitude is ABOVE MSA (3500ft &gt; 3000ft MSA), no MSAW alert should be generated.&#xa;
+- 2nd step: track altitude is BELOW MSA (2500ft &lt; 3000ft MSA), MSAW alert should be generated.&#xa;
 - 3rd step: track altitude is ABOVE MSA again (3500ft > 3000ft MSA), no MSAW alert should be generated.&#xa;
 &#xa;
 MSA threshold = 3000ft for APPROACH_ZONE_01. MIN_CLIMB_RATE=500 ft/min. MSAW_EMERGENCY_OVERRIDE=false. System status=OPERATIONAL.&#xa;

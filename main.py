@@ -12,6 +12,7 @@ you must defined in your .env
 
 - GOOGLE_API_KEY 
 - SRS_PATH (the pdf path)
+- TESTS_PATH (the tests path)
 - AGENTS_PATH (the yaml path)
 
 """
@@ -23,5 +24,6 @@ llm = md.get_llm()
 supervisor = sp.Supervisor.create(llm) 
 
 # invoke him !
-response = supervisor.invoke("Give me the requirement that talks about suppression of STCA conﬂicts.")
+#response = supervisor.invoke("Give me the test id that deals with MSAW alerts genration when track altitude is below the Minimum Safe Altitude")
+response = supervisor.invoke("Analyse the coverage of SKYRADAR-MSAW-025 !")
 print(response)

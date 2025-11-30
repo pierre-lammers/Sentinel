@@ -1,5 +1,10 @@
 active_agents:
-  - name: Rag_Agent
-    description: Utilise cet outil pour toutes les requêtes basées sur des documents techniques. Il fournit des réponses contextuelles.
-    middleware_func: prompt_with_context
-    tools: []
+  - name: TechDoc_Retriever
+    description: "Use this tool to search and retrieve pure technical information or requirements from the SPECIFICATION DOCUMENTATION (PDF). Do not use this tool for test coverage analysis."
+    llm: gemini-2.5-flash
+    middleware_func: retrieve_tech_doc_context
+
+  - name: TestCoverage_Analyzer
+    description: "Use this tool to analyze and compare a specific requirement against the functional test base (XML) to determine test coverage status and identify any missing test cases."
+    llm: gemini-2.5-flash
+    middleware_func: analyze_coverage_context
