@@ -1,4 +1,4 @@
-.PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
+.PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests rag
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -21,6 +21,12 @@ test_profile:
 extended_tests:
 	python -m pytest --only-extended $(TEST_FILE)
 
+######################
+# RAG SETUP
+######################
+
+rag:
+	python src/agent/index.py
 
 ######################
 # LINTING AND FORMATTING
@@ -64,4 +70,5 @@ help:
 	@echo 'tests                        - run unit tests'
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'
 	@echo 'test_watch                   - run unit tests in watch mode'
+	@echo 'rag                          - create vector store from SRS PDF'
 

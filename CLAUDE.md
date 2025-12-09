@@ -147,3 +147,7 @@ The project is configured to deploy using LangGraph Cloud. The `langgraph.json` 
 - Container image distribution (`wolfi`)
 
 See LangGraph documentation for cloud deployment details.
+
+## Code conventions
+
+When writing code, adhere to the repository’s conventions and refer to the MCP LangChain documentation.
