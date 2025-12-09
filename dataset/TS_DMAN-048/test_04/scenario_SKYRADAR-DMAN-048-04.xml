@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		testId="TS_DMAN-048-04"
+		testTitle="Generation of DMAN slot violation alerts (DMAN system operational transition)"
+		testObjective="This test verifies that SKYRADAR properly generates DMAN slot violation alerts when DMAN system transitions from STANDBY to OPERATIONAL status.&#xa;
+		Conditions for DMAN slot violation alert generation are:&#xa;
+1) The DMAN system status is equal to OPERATIONAL. &#xa;
+2) The track has an assigned Target Take-Off Time (TTOT) with departure sequence position allocated by DMAN. &#xa;
+3) The track is in DEPARTURE_GROUND or DEPARTURE_TAXI flight phase with valid ground position data. &#xa;
+4) The calculated actual take-off time prediction exceeds the assigned TTOT by more than DMAN_SLOT_TOLERANCE (+/- 5 minutes). &#xa;
+5) The departure runway assigned to the track has active DMAN sequencing enabled with current departure demand exceeding DMAN_ACTIVATION_THRESHOLD (8 departures per hour). &#xa;
+6) The track departure route or initial departure fix matches one of the DMAN managed flow constraint points defined in DMAN_REGULATED_ROUTES.&#xa;
+- 1st step: DMAN system status is STANDBY, no DMAN alert should be generated.&#xa;
+- 2nd step: DMAN system status transitions to OPERATIONAL, DMAN alert should be generated.&#xa;
+&#xa;
+Track is in DEPARTURE_TAXI phase with slot violation (predicted time 11:18:00 exceeds TTOT 11:10:00 + 5 min). DMAN_SLOT_TOLERANCE = 300 seconds."
+		requirement1="SKYRADAR-DMAN-048" requirementCMATS1="SKYRADAR-DMAN-048"
+		historyDate1="18/11/2024"
+		historyDate2="25/11/2024"
+		historyEcrId1="CMATS_ISD103"
+		historyEcrId2="FRSKYRADAR-9145"
+		historyVersion1="5.1"
+		actionComment="Track is in DEPARTURE_TAXI phase with slot violation (8 min delay). DMAN system transitions to OPERATIONAL."
+		actionDescription="Track is in departure taxi phase with predicted take-off time exceeding slot tolerance. When DMAN system becomes OPERATIONAL, alert should be generated.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="DLH890" cfl="360" cflUnity="F" departureRwy="27R" departureAirport="LFPG" isControlled="true" flightRules="I" departureRoute="DMAN_ROUTE_NORTH"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="DLH890" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<DmanSystemUpdate time="3">
+		<DmanStatus status="STANDBY" slotTolerance="300"/>
+		<RunwayConfig runway="27R" dmanSequencingEnabled="true" departureRate="9"/>
+		<RegulatedRoutes>
+			<Route name="DMAN_ROUTE_NORTH" active="true"/>
+			<Route name="DMAN_ROUTE_SOUTH" active="true"/>
+			<Route name="DMAN_ROUTE_EAST" active="true"/>
+		</RegulatedRoutes>
+	</DmanSystemUpdate>
+
+	<TrackUpdates time="5">
+		<TrackUpdate trackNumber="1" posX="-530" posY="190" groundSpeed="9" identStr="1" flightPhase="DEPARTURE_TAXI" positionQuality="HIGH">
+			<Mode3A value="5678"/>
+			<FlightPlan callsign="DLH890" ifpsFlightId="1" airportDep="LFPG" runway="27R" departureRoute="DMAN_ROUTE_NORTH"/>
+			<DmanData ttot="40200000" sequencePosition="4" predictedTakeoffTime="40680000"/>
+			<Ident sac="145" sic="110"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="7000" resultDescription="No DMAN slot violation alert is generated because DMAN system status is STANDBY."
+				nextActionComment="At time 12, DMAN system is set to OPERATIONAL status.&#xa;
+				Track continues with slot violation (predicted time 11:18:00 exceeds TTOT 11:10:00 + 5 min)."
+				nextActionDescription="DMAN system transitions to OPERATIONAL. With all conditions met, DMAN slot violation alert should be generated.">
+		<Alerts alertType="DMAN_SLOT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- MISSING: The DmanSystemUpdate that should change status to OPERATIONAL is MISSING here! -->
+	<!-- This should be: <DmanSystemUpdate time="12"><DmanStatus status="OPERATIONAL" slotTolerance="300"/><RunwayConfig runway="27R" dmanSequencingEnabled="true" departureRate="9"/><RegulatedRoutes><Route name="DMAN_ROUTE_NORTH" active="true"/><Route name="DMAN_ROUTE_SOUTH" active="true"/><Route name="DMAN_ROUTE_EAST" active="true"/></RegulatedRoutes></DmanSystemUpdate> -->
+
+	<TrackUpdates time="13">
+		<TrackUpdate trackNumber="1" posX="-520" posY="195" groundSpeed="9" identStr="1" flightPhase="DEPARTURE_TAXI" positionQuality="HIGH">
+			<Mode3A value="5678"/>
+			<FlightPlan callsign="DLH890" ifpsFlightId="1" airportDep="LFPG" runway="27R" departureRoute="DMAN_ROUTE_NORTH"/>
+			<DmanData ttot="40200000" sequencePosition="4" predictedTakeoffTime="40680000"/>
+			<Ident sac="145" sic="110"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="15000" resultDescription="DMAN slot violation alert is generated because DMAN system is OPERATIONAL and predicted take-off time exceeds tolerance.">
+		<Alerts alertType="DMAN_SLOT_VIOLATION" trackNum="1" alertGenerated="true">
+			<DmanAlert severity="WARNING" ttot="40200000" predictedTime="40680000" slotDeviation="480" tolerance="300" runway="27R"/>
+		</Alerts>
+	</TestResult>
+</UpdateRoot>

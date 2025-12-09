@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RvsmZonesConfiguration>
+    <RvsmZone zoneName="RVSM_ZONE_ALPHA" isActive="true" minFlightLevel="290" maxFlightLevel="410">
+        <Boundary>
+            <Point latitude="0.0" longitude="100.0"/>
+            <Point latitude="10.0" longitude="100.0"/>
+            <Point latitude="10.0" longitude="110.0"/>
+            <Point latitude="0.0" longitude="110.0"/>
+        </Boundary>
+    </RvsmZone>
+    <RvsmZone zoneName="RVSM_ZONE_BRAVO" isActive="true" minFlightLevel="290" maxFlightLevel="410">
+        <Boundary>
+            <Point latitude="10.0" longitude="100.0"/>
+            <Point latitude="20.0" longitude="100.0"/>
+            <Point latitude="20.0" longitude="110.0"/>
+            <Point latitude="10.0" longitude="110.0"/>
+        </Boundary>
+    </RvsmZone>
+</RvsmZonesConfiguration>

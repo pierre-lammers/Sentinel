@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_CPDLC-047-03"
+			testTitle="CPDLC message timeout alert (message type and status validation)"
+			testObjective="This test validates that SKYRADAR generates CPDLC timeout alerts only for CLEARANCE or INSTRUCTION message types with SENT status.&#xa;
+			Conditions for CPDLC timeout alert generation are:&#xa;
+1) The CPDLC system status is equal to OPERATIONAL. &#xa;
+2) The track has an active CPDLC connection with logon status set to CONNECTED and data authority is CURRENT. &#xa;
+3) A CPDLC uplink message of type CLEARANCE or INSTRUCTION has been transmitted to the aircraft with message status equal to SENT. &#xa;
+4) The elapsed time since message transmission exceeds the response timeout threshold (CPDLC_RESPONSE_TIMEOUT). &#xa;
+5) No CPDLC downlink response (WILCO, UNABLE, STANDBY, or ROGER) has been received from the aircraft for the pending message. &#xa;
+6) The message criticality level is set to HIGH or SAFETY_CRITICAL requiring mandatory acknowledgment. &#xa;
+7) The flag CPDLC_VOICE_BACKUP_ENABLED is set to true and the controller position has active voice communication capability.&#xa;
+- 1st step: Message type is INFORMATION (not CLEARANCE/INSTRUCTION), timeout exceeded, no alert should be generated.&#xa;
+- 2nd step: Message type changes to CLEARANCE with SENT status, timeout alert should be generated.&#xa;
+- 3rd step: Message status changes to ACKNOWLEDGED, timeout alert should be cleared.&#xa;
+&#xa;
+System status=OPERATIONAL. Connection=CONNECTED. Elapsed time=65s > 60s timeout. Criticality=HIGH. Voice backup=true.&#xa;
+All conditions are met except message type/status, which is tested through transitions."
+			requirement1="SKYRADAR-CPDLC-047" requirementCMATS1="SKYRADAR-CPDLC-047"
+			historyDate1="15/09/2024"
+			historyDate2="12/11/2024"
+			historyEcrId1="CMATS_ISD91"
+			historyEcrId2="FRSKYRADAR-8222"
+			historyVersion1="4.2"
+			actionComment="Testing different CPDLC message types (INFORMATION vs CLEARANCE) and status (SENT vs ACKNOWLEDGED)."
+			actionDescription="Track has CPDLC messages with varying types and statuses. Timeout exceeded but alert generation depends on message type being CLEARANCE/INSTRUCTION with SENT status.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="QTR789" cfl="390" cflUnity="F" arrivalRwy="34L" arrivalAirport="EDDF" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="QTR789" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<CpdlcSystemUpdate time="3">
+		<CpdlcStatus status="OPERATIONAL" voiceBackupEnabled="true"/>
+	</CpdlcSystemUpdate>
+
+	<CpdlcConnectionUpdate time="4">
+		<Connection trackNum="1" logonStatus="CONNECTED" dataAuthority="CURRENT" voiceFrequency="131.2" voiceCapability="ACTIVE"/>
+	</CpdlcConnectionUpdate>
+
+	<CpdlcMessageUpdate time="5000">
+		<UplinkMessage trackNum="1" messageId="MSG_003" messageType="INFORMATION" messageContent="EXPECT VECTORS FOR ILS APPROACH" messageStatus="SENT" transmissionTime="5000" criticalityLevel="HIGH" responseTimeout="60000" responseReceived="false"/>
+	</CpdlcMessageUpdate>
+
+	<TrackUpdates time="5100">
+		<TrackUpdate trackNumber="1" measFlightLevel="39000" measFlightLevelAge="0" posX="200" posY="150" cartSpeedX="220" cartSpeedY="-40" identStr="1" baroAltitude="39000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" flightPhase="CRUISE">
+			<Mode3A value="4567"/>
+			<FlightPlan callsign="QTR789" ifpsFlightId="1" airportArr="EDDF" flightCatFr1Fr2="0" runway="34L"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="70000" resultDescription="No CPDLC timeout alert is generated because message type is INFORMATION (not CLEARANCE or INSTRUCTION), even though elapsed time (65s) exceeds timeout (60s)."
+				nextActionComment="At time 75000ms, new CLEARANCE message is sent to aircraft.&#xa;
+				Message type is now CLEARANCE with SENT status."
+				nextActionDescription="Message type becomes CLEARANCE. This should trigger timeout alert when threshold is exceeded.">
+		<Alerts alertType="CPDLC_TIMEOUT" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<CpdlcMessageUpdate time="75000">
+		<UplinkMessage trackNum="1" messageId="MSG_004" messageType="CLEARANCE" messageContent="DESCEND TO FL240" messageStatus="SENT" transmissionTime="75000" criticalityLevel="HIGH" responseTimeout="60000" responseReceived="false"/>
+	</CpdlcMessageUpdate>
+
+	<TrackUpdates time="75100">
+		<TrackUpdate trackNumber="1" measFlightLevel="39000" measFlightLevelAge="0" posX="220" posY="140" cartSpeedX="220" cartSpeedY="-40" identStr="1" baroAltitude="39000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" flightPhase="CRUISE">
+			<Mode3A value="4567"/>
+			<FlightPlan callsign="QTR789" ifpsFlightId="1" airportArr="EDDF" flightCatFr1Fr2="0" runway="34L"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="140000" resultDescription="CPDLC timeout alert is generated because message type is CLEARANCE with SENT status and elapsed time (65s) exceeds timeout (60s)."
+				nextActionComment="At time 145000ms, aircraft sends WILCO response and message status changes to ACKNOWLEDGED.&#xa;
+				Response received from crew."
+				nextActionDescription="Message status becomes ACKNOWLEDGED. Timeout alert should be cleared.">
+		<Alerts alertType="CPDLC_TIMEOUT" trackNum="1" alertGenerated="true">
+			<CpdlcTimeoutAlert severity="WARNING" messageId="MSG_004" elapsedTime="65" timeout="60" voiceReversionTriggered="true"/>
+		</Alerts>
+	</TestResult>
+
+	<CpdlcMessageUpdate time="145000">
+		<UplinkMessage trackNum="1" messageId="MSG_004" messageType="CLEARANCE" messageContent="DESCEND TO FL240" messageStatus="ACKNOWLEDGED" transmissionTime="75000" criticalityLevel="HIGH" responseTimeout="60000" responseReceived="true" responseType="WILCO" responseTime="145000"/>
+	</CpdlcMessageUpdate>
+
+	<TrackUpdates time="145100">
+		<TrackUpdate trackNumber="1" measFlightLevel="39000" measFlightLevelAge="0" posX="240" posY="130" cartSpeedX="220" cartSpeedY="-40" identStr="1" baroAltitude="39000" baroAltitudeQNHCor="0" rocRodRate="-1200" altitudeQuality="HIGH" flightPhase="DESCENT">
+			<Mode3A value="4567"/>
+			<FlightPlan callsign="QTR789" ifpsFlightId="1" airportArr="EDDF" flightCatFr1Fr2="0" runway="34L"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="145500" resultDescription="No CPDLC timeout alert is generated because message status is ACKNOWLEDGED (not SENT).">
+		<Alerts alertType="CPDLC_TIMEOUT" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+</UpdateRoot>

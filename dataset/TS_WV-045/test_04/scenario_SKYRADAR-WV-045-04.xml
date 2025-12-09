@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ScenarioDefinition scenarioId="scenario_SKYRADAR-WV-045-04"
+                    scenarioDescription="Validates wake vortex separation monitoring using distance-based separation mode. Tests condition C6: Separation threshold validation in distance-based mode (WV_TIME_BASED_MODE=false).">
+
+    <!-- Test Objective: Verify wake vortex alert generation in distance-based mode
+
+         Test Strategy:
+         - Setup: Two aircraft (SUPER leading, LIGHT following) in distance-based mode
+         - Baseline (t=5s): Separation 6000m (> 5556m threshold) → No alert expected
+         - Transition (t=10s): Aircraft close to 4500m separation
+         - Verification (t=15s): Separation 4500m (< 5556m threshold) → Alert expected
+
+         ⚠️ FALSE POSITIVE ISSUE:
+         This test claims to validate condition C6 (separation mode and threshold checking).
+         However, C6 is an OR condition with TWO alternatives:
+
+         C6: (WV_TIME_BASED_MODE=true AND time_separation < WV_MIN_TIME_SEPARATION)
+             OR
+             (WV_TIME_BASED_MODE=false AND distance_separation < WV_MIN_DISTANCE_SEPARATION)
+
+         This test ONLY validates the distance-based half (flag=false).
+         It does NOT test the time-based half (flag=true with time separation).
+
+         A complete test of C6 would require BOTH scenarios:
+         1. Distance-based mode test (this test ✅)
+         2. Time-based mode test (MISSING ❌)
+
+         This is a subtle but critical gap - the OR condition is incompletely tested.
+
+         Conditions Status:
+         C1: 🟡 Implicitly satisfied (system OPERATIONAL)
+         C2: 🟡 Implicitly satisfied (both APPROACH, same runway 09R)
+         C3: 🟡 Implicitly satisfied (SUPER→LIGHT, 3 categories)
+         C4: 🟡 Implicitly satisfied (separation below dynamic minimum)
+         C5: 🟡 Implicitly satisfied (both qualityIndicator HIGH)
+         C6: ⚠️ PARTIALLY TESTED (only distance-based mode, NOT time-based mode)
+         C7: 🟡 Implicitly satisfied (override false, no emergency codes)
+    -->
+
+    <!-- SETUP: Define two aircraft flight plans -->
+    <FlightPlanUpdate time="0">
+        <!-- Leader: Super heavy aircraft (A380) -->
+        <FlightPlan trackNum="401" callsign="SIA25" aircraftType="A388"
+                    departureAirport="WSSS" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="SUPER"
+                    arrivalRunway="09R"/>
+
+        <!-- Follower: Light aircraft (Beechcraft Baron) -->
+        <FlightPlan trackNum="402" callsign="PH-BRN" aircraftType="BE58"
+                    departureAirport="EHRD" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="LIGHT"
+                    arrivalRunway="09R"/>
+    </FlightPlanUpdate>
+
+    <!-- SETUP: Initialize track identities -->
+    <IdentUpdate time="1000">
+        <Ident trackNum="401" callsign="SIA25" squawkCode="5741"/>
+        <Ident trackNum="402" callsign="PH-BRN" squawkCode="5742"/>
+    </IdentUpdate>
+
+    <!-- CONFIG: System parameters and weather conditions -->
+    <SystemConfigUpdate time="2000">
+        <!-- Wake vortex system OPERATIONAL -->
+        <WakeVortexSystemStatus status="OPERATIONAL"/>
+
+        <!-- Weather conditions: Very light crosswind (maximum vortex persistence) -->
+        <WeatherData crosswind="2" temperature="10" humidity="80"/>
+
+        <!-- DISTANCE-BASED separation mode (flag = false) -->
+        <SystemFlag name="WV_TIME_BASED_MODE" value="false"/>
+        <SystemFlag name="WV_EMERGENCY_OVERRIDE" value="false"/>
+
+        <!-- System parameters -->
+        <Parameter name="WV_MIN_DISTANCE_SEPARATION" value="5556"/>
+        <Parameter name="WV_MIN_TIME_SEPARATION" value="120"/>
+        <Parameter name="WV_PARALLEL_RWY_DISTANCE" value="760"/>
+    </SystemConfigUpdate>
+
+    <!-- BASELINE: Safe separation distance (above threshold) -->
+    <TrackUpdates time="5000">
+        <!-- Leader: 6 NM out, slower approach speed -->
+        <TrackUpdate trackNum="401" latitude="52.3105" longitude="4.6623"
+                     altitude="2100" heading="090" groundSpeed="145"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="SUPER"/>
+
+        <!-- Follower: 2.8 NM out (6000m behind leader, ABOVE threshold) -->
+        <TrackUpdate trackNum="402" latitude="52.3105" longitude="4.7159"
+                     altitude="1400" heading="090" groundSpeed="125"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="LIGHT"/>
+    </TrackUpdates>
+
+    <!-- TEST 1: Separation 6000m (> 5556m) → No alert (above threshold) -->
+    <TestResult resultTimeInMilliSec="5000"
+                resultDescription="Baseline: Distance-based separation mode (WV_TIME_BASED_MODE=false). Separation is 6000m which is ABOVE the minimum threshold of 5556m (3 NM). Alert should NOT be generated.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="402" alertGenerated="false"/>
+    </TestResult>
+
+    <!-- TRANSITION: Follower increases speed, closes separation gap -->
+    <SystemStatusUpdate time="10000">
+        <TrackSpeedChange trackNum="402" newGroundSpeed="155"
+                          reason="ATC speed instruction: Maintain 155 knots"/>
+    </SystemStatusUpdate>
+
+    <!-- VERIFICATION: Insufficient distance separation (below threshold) -->
+    <TrackUpdates time="15000">
+        <!-- Leader: 3.5 NM out, steady approach -->
+        <TrackUpdate trackNum="401" latitude="52.3105" longitude="4.7068"
+                     altitude="1300" heading="090" groundSpeed="145"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="SUPER"/>
+
+        <!-- Follower: Caught up to 2.4 NM separation (4500m, BELOW 5556m threshold) -->
+        <TrackUpdate trackNum="402" latitude="52.3105" longitude="4.7473"
+                     altitude="1000" heading="090" groundSpeed="155"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="LIGHT"/>
+    </TrackUpdates>
+
+    <!-- TEST 2: Separation 4500m (< 5556m) → Alert SHOULD be generated -->
+    <TestResult resultTimeInMilliSec="15000"
+                resultDescription="Condition triggered: Distance-based mode with separation 4500m which is BELOW minimum threshold of 5556m. Alert SHOULD be generated for insufficient distance separation between SUPER leader and LIGHT follower.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="402" alertGenerated="true"
+                leadTrack="401" separation="4500" separationUnit="meters"
+                alertSeverity="HIGH" alertMessage="Wake vortex separation infringement: SUPER to LIGHT"
+                separationMode="DISTANCE_BASED" threshold="5556"/>
+    </TestResult>
+
+    <!-- NOTE: This test successfully validates the distance-based mode portion of C6.
+         However, it does NOT test the time-based mode alternative (WV_TIME_BASED_MODE=true).
+         A complete test suite for C6 would require an additional test scenario with:
+         - WV_TIME_BASED_MODE set to true
+         - Time-based separation validation (time between aircraft < WV_MIN_TIME_SEPARATION)
+         - Different meteorological conditions (e.g., strong tailwinds requiring time-based mode)
+    -->
+
+</ScenarioDefinition>

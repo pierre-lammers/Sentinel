@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RNPProcedureDatabase xmlns="N_DATA_MODEL_HLFT">
+	<!-- RNP Procedure Database -->
+	<!-- This database defines published RNP approach procedures with their requirements -->
+
+	<!-- Airport: WSSS (Singapore Changi) -->
+	<Airport icaoCode="WSSS" name="Singapore Changi">
+
+		<!-- Runway 02C RNP AR 0.3 Approach -->
+		<Procedure id="WSSS_RNP_02C_AR03" runway="02C" approachType="RNP_AR">
+			<RequiredRNP value="0.3" unit="NM"/>
+			<AuthorizationRequired value="true"/>
+			<FAF name="CF02C" latitude="1.3544" longitude="103.9822" altitude="1500"/>
+			<CoverageVolume>
+				<Segment name="FINAL">
+					<StartPoint name="CF02C" latitude="1.3544" longitude="103.9822"/>
+					<EndPoint name="RW02C" latitude="1.3675" longitude="103.9896"/>
+				</Segment>
+			</CoverageVolume>
+		</Procedure>
+
+		<!-- Runway 20C RNP 0.3 Approach -->
+		<Procedure id="WSSS_RNP_20C_03" runway="20C" approachType="RNP">
+			<RequiredRNP value="0.3" unit="NM"/>
+			<AuthorizationRequired value="false"/>
+			<FAF name="CF20C" latitude="1.3806" longitude="103.9970" altitude="1500"/>
+			<CoverageVolume>
+				<Segment name="FINAL">
+					<StartPoint name="CF20C" latitude="1.3806" longitude="103.9970"/>
+					<EndPoint name="RW20C" latitude="1.3675" longitude="103.9896"/>
+				</Segment>
+			</CoverageVolume>
+		</Procedure>
+
+		<!-- Runway 02C RNP AR 0.1 Approach (High Precision) -->
+		<Procedure id="WSSS_RNP_02C_AR01" runway="02C" approachType="RNP_AR">
+			<RequiredRNP value="0.1" unit="NM"/>
+			<AuthorizationRequired value="true"/>
+			<FAF name="CF02C" latitude="1.3544" longitude="103.9822" altitude="1500"/>
+			<CoverageVolume>
+				<Segment name="FINAL">
+					<StartPoint name="CF02C" latitude="1.3544" longitude="103.9822"/>
+					<EndPoint name="RW02C" latitude="1.3675" longitude="103.9896"/>
+				</Segment>
+			</CoverageVolume>
+		</Procedure>
+	</Airport>
+
+	<!-- Airport: LFPG (Paris Charles de Gaulle) -->
+	<Airport icaoCode="LFPG" name="Paris Charles de Gaulle">
+
+		<!-- Runway 26R RNP 1.0 Approach -->
+		<Procedure id="LFPG_RNP_26R_10" runway="26R" approachType="RNP">
+			<RequiredRNP value="1.0" unit="NM"/>
+			<AuthorizationRequired value="false"/>
+			<FAF name="CF26R" latitude="49.0250" longitude="2.5500" altitude="2000"/>
+			<CoverageVolume>
+				<Segment name="FINAL">
+					<StartPoint name="CF26R" latitude="49.0250" longitude="2.5500"/>
+					<EndPoint name="RW26R" latitude="49.0097" longitude="2.5478"/>
+				</Segment>
+			</CoverageVolume>
+		</Procedure>
+	</Airport>
+</RNPProcedureDatabase>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RvsmSystemParameters>
+    <Parameter name="RVSM_MIN_FL" value="290" unit="FL" description="Minimum flight level for RVSM airspace"/>
+    <Parameter name="RVSM_MAX_FL" value="410" unit="FL" description="Maximum flight level for RVSM airspace"/>
+    <Parameter name="RVSM_EMERGENCY_EXCEPTION" value="false" description="Emergency override flag"/>
+    <Parameter name="ALERT_PERSISTENCE_TIME" value="30000" unit="milliseconds" description="Alert persistence duration"/>
+    <Parameter name="EMERGENCY_SQUAWK_CODES">
+        <Code value="7500" description="Unlawful interference"/>
+        <Code value="7600" description="Communications failure"/>
+        <Code value="7700" description="Emergency"/>
+    </Parameter>
+</RvsmSystemParameters>

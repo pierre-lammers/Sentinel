@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DmanConfiguration xmlns="N_DATA_MODEL_HLFT">
+	<!-- DMAN System Parameters for Departure Sequence Slot Compliance Monitoring -->
+
+	<SystemParameters>
+		<!-- Slot tolerance in seconds (+/- 5 minutes) -->
+		<Parameter name="DMAN_SLOT_TOLERANCE" value="300" unit="seconds"/>
+
+		<!-- Minimum departure rate to activate DMAN sequencing -->
+		<Parameter name="DMAN_ACTIVATION_THRESHOLD" value="8" unit="departures_per_hour"/>
+
+		<!-- Maximum slot deviation before critical alert -->
+		<Parameter name="DMAN_CRITICAL_DEVIATION" value="600" unit="seconds"/>
+
+		<!-- Prediction update interval -->
+		<Parameter name="DMAN_PREDICTION_UPDATE_RATE" value="30" unit="seconds"/>
+	</SystemParameters>
+
+	<RegulatedRoutes>
+		<!-- DMAN managed flow constraint points -->
+		<Route name="DMAN_ROUTE_NORTH" active="true" initialFix="OKIPA" description="Northern departure routes"/>
+		<Route name="DMAN_ROUTE_SOUTH" active="true" initialFix="MOPAR" description="Southern departure routes"/>
+		<Route name="DMAN_ROUTE_EAST" active="true" initialFix="LORNI" description="Eastern departure routes"/>
+		<Route name="DMAN_ROUTE_WEST" active="false" initialFix="ABNUR" description="Western departure routes (inactive)"/>
+	</RegulatedRoutes>
+
+	<RunwayConfigurations>
+		<Runway id="27R"
+			dmanSequencingEnabled="true"
+			departureCapacity="20"
+			minimumSeparation="90"
+			description="Primary departure runway"/>
+		<Runway id="09L"
+			dmanSequencingEnabled="true"
+			departureCapacity="18"
+			minimumSeparation="90"
+			description="Secondary departure runway"/>
+		<Runway id="27L"
+			dmanSequencingEnabled="false"
+			departureCapacity="15"
+			minimumSeparation="120"
+			description="Backup runway (DMAN disabled)"/>
+	</RunwayConfigurations>
+
+	<SystemStates>
+		<State name="OPERATIONAL" description="DMAN fully operational, all functions available"/>
+		<State name="STANDBY" description="DMAN in standby mode, no alerts generated"/>
+		<State name="DEGRADED" description="DMAN degraded mode, limited functionality"/>
+		<State name="OFFLINE" description="DMAN offline, system unavailable"/>
+	</SystemStates>
+</DmanConfiguration>

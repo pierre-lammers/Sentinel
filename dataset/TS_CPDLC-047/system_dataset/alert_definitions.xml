@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AlertDefinitions>
+	<!-- CPDLC Timeout Alert Definition -->
+	<Alert type="CPDLC_TIMEOUT" category="COMMUNICATION" safetyImpact="true">
+		<Description>CPDLC message timeout alert - no response received within timeout threshold</Description>
+		<TriggerConditions>
+			<Condition id="C1">CPDLC system status is OPERATIONAL</Condition>
+			<Condition id="C2">Track has CPDLC connection with logon status CONNECTED and data authority CURRENT</Condition>
+			<Condition id="C3">CPDLC uplink message type is CLEARANCE or INSTRUCTION with status SENT</Condition>
+			<Condition id="C4">Elapsed time since message transmission exceeds CPDLC_RESPONSE_TIMEOUT threshold</Condition>
+			<Condition id="C5">No CPDLC downlink response received (WILCO, UNABLE, STANDBY, or ROGER)</Condition>
+			<Condition id="C6">Message criticality level is HIGH or SAFETY_CRITICAL</Condition>
+			<Condition id="C7">Voice backup enabled and voice communication capability active</Condition>
+		</TriggerConditions>
+		<SeverityLevels>
+			<Severity level="WARNING" messageType="CLEARANCE" description="Clearance not acknowledged within timeout"/>
+			<Severity level="CRITICAL" messageType="INSTRUCTION" criticalityLevel="SAFETY_CRITICAL" description="Safety-critical instruction not acknowledged"/>
+		</SeverityLevels>
+		<Actions>
+			<Action name="VOICE_REVERSION" description="Trigger voice communication reversion to controller"/>
+			<Action name="VISUAL_ALERT" description="Display visual alert on controller workstation"/>
+			<Action name="AUDIO_ALERT" description="Generate audio alert for controller attention"/>
+			<Action name="LOG_EVENT" description="Log timeout event in system audit trail"/>
+		</Actions>
+		<ClearanceConditions>
+			<Condition>CPDLC downlink response received (any type: WILCO, UNABLE, STANDBY, ROGER)</Condition>
+			<Condition>Message status changed to ACKNOWLEDGED or CANCELLED</Condition>
+			<Condition>CPDLC system status changed to non-OPERATIONAL</Condition>
+			<Condition>Track CPDLC connection status changed to DISCONNECTED</Condition>
+		</ClearanceConditions>
+	</Alert>
+
+	<!-- Related Alert Definitions -->
+	<Alert type="CPDLC_CONNECTION_LOST" category="COMMUNICATION" safetyImpact="true">
+		<Description>CPDLC connection lost unexpectedly during active data link session</Description>
+	</Alert>
+
+	<Alert type="CPDLC_LOGON_FAILED" category="COMMUNICATION" safetyImpact="false">
+		<Description>CPDLC logon attempt failed - connection could not be established</Description>
+	</Alert>
+
+	<Alert type="VOICE_REVERSION_ACTIVE" category="COMMUNICATION" safetyImpact="true">
+		<Description>Voice communication reversion activated due to CPDLC timeout or failure</Description>
+	</Alert>
+</AlertDefinitions>

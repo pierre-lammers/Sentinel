@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<conflictParametersRoot xmlns="N_DATA_MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="N_DATA_MODEL conflictParametersDM.xsd">
+  <conflictParametersGlobal  suppressAlertUncoupled="false" suppressAlertUncontrolledFPL="false" suppressAlertVFROrUncoupled="false" suppressAlertIFR="false" processOnlyCoupled="false" suppressAlertBothTracksInInhibArea="false" suppressAlertOneTrackInhibited="false">
+    <rvsmDefaultThreshold>290</rvsmDefaultThreshold>
+  </conflictParametersGlobal>
+  <conflictParametersGroup  parameterGroupId="1" assumeUncoupledAsRVSM="false" processTrackWithNoLevel="false" processTrackWithAgedLevel="false" suppressAlertHolding="false" lookAheadTimeMainHypothesis="90" lookAheadTimeBackUpHypothesis="90" warningTimeMainHypothesis="90" warningTimeBackUpHypothesis="90" imminentTimeMainHypothesis="90" imminentTimeBackUpHypothesis="90" horizontalSepMainHypothesis="5" horizontalSepBackUpHypothesis="5" horizontalSepDivergingMainHypothesis="5" horizontalSepDivergingBackUpHypothesis="5" horizontalSepDirectConflict="5" horizontalSepCoarse="5" conflictQualityThreshold="0.5" conflictCounterThreshold="5" conflictMissThreshold="1" modeAParameterGroup="false">
+    <rvsmUpperLimit>55</rvsmUpperLimit>
+    <rvsmLowerLimit>45</rvsmLowerLimit>
+    <lowVerticalSepMainHypothesis>1000</lowVerticalSepMainHypothesis>
+    <lowVerticalSepBackUpHypothesis>550</lowVerticalSepBackUpHypothesis>
+    <highVerticalSepMainHypothesis>1900</highVerticalSepMainHypothesis>
+    <highVerticalSepBackUpHypothesis>1550</highVerticalSepBackUpHypothesis>
+  </conflictParametersGroup>
+  <conflictParametersGroup  parameterGroupId="2" assumeUncoupledAsRVSM="true" processTrackWithNoLevel="false" processTrackWithAgedLevel="false" suppressAlertHolding="false" lookAheadTimeMainHypothesis="90" lookAheadTimeBackUpHypothesis="90" warningTimeMainHypothesis="80" warningTimeBackUpHypothesis="80" imminentTimeMainHypothesis="60" imminentTimeBackUpHypothesis="60" horizontalSepMainHypothesis="5" horizontalSepBackUpHypothesis="5" horizontalSepDivergingMainHypothesis="5" horizontalSepDivergingBackUpHypothesis="5" horizontalSepDirectConflict="5" horizontalSepCoarse="5" conflictQualityThreshold="0.7" conflictCounterThreshold="5" conflictMissThreshold="1" modeAParameterGroup="false" >
+    <rvsmUpperLimit>400</rvsmUpperLimit>
+    <rvsmLowerLimit>20</rvsmLowerLimit>
+    <lowVerticalSepMainHypothesis>1000</lowVerticalSepMainHypothesis>
+    <lowVerticalSepBackUpHypothesis>500</lowVerticalSepBackUpHypothesis>
+    <highVerticalSepMainHypothesis>1995</highVerticalSepMainHypothesis>
+    <highVerticalSepBackUpHypothesis>1500</highVerticalSepBackUpHypothesis>
+  </conflictParametersGroup>
+  <conflictParametersGroup  parameterGroupId="3" assumeUncoupledAsRVSM="false" processTrackWithNoLevel="false" processTrackWithAgedLevel="false" suppressAlertHolding="false" lookAheadTimeMainHypothesis="90" lookAheadTimeBackUpHypothesis="90" warningTimeMainHypothesis="90" warningTimeBackUpHypothesis="90" imminentTimeMainHypothesis="90" imminentTimeBackUpHypothesis="90" horizontalSepMainHypothesis="5" horizontalSepBackUpHypothesis="5" horizontalSepDivergingMainHypothesis="5" horizontalSepDivergingBackUpHypothesis="5" horizontalSepDirectConflict="5" horizontalSepCoarse="5" conflictQualityThreshold="1" conflictCounterThreshold="5" conflictMissThreshold="1" modeAParameterGroup="false">
+    <rvsmUpperLimit>100</rvsmUpperLimit>
+    <rvsmLowerLimit>60</rvsmLowerLimit>
+    <lowVerticalSepMainHypothesis>1000</lowVerticalSepMainHypothesis>
+    <lowVerticalSepBackUpHypothesis>500</lowVerticalSepBackUpHypothesis>
+    <highVerticalSepMainHypothesis>2000</highVerticalSepMainHypothesis>
+    <highVerticalSepBackUpHypothesis>1500</highVerticalSepBackUpHypothesis>
+  </conflictParametersGroup>
+  <conflictParametersGroup  parameterGroupId="4" assumeUncoupledAsRVSM="false" processTrackWithNoLevel="false" processTrackWithAgedLevel="false" suppressAlertHolding="false" lookAheadTimeMainHypothesis="90" lookAheadTimeBackUpHypothesis="90" warningTimeMainHypothesis="90" warningTimeBackUpHypothesis="90" imminentTimeMainHypothesis="90" imminentTimeBackUpHypothesis="90" horizontalSepMainHypothesis="5" horizontalSepBackUpHypothesis="5" horizontalSepDivergingMainHypothesis="5" horizontalSepDivergingBackUpHypothesis="5" horizontalSepDirectConflict="5" horizontalSepCoarse="5" conflictQualityThreshold="0.5" conflictCounterThreshold="5" conflictMissThreshold="5" modeAParameterGroup="false">
+    <rvsmUpperLimit>410</rvsmUpperLimit>
+    <rvsmLowerLimit>290</rvsmLowerLimit>
+    <lowVerticalSepMainHypothesis>750</lowVerticalSepMainHypothesis>
+    <lowVerticalSepBackUpHypothesis>500</lowVerticalSepBackUpHypothesis>
+    <highVerticalSepMainHypothesis>1750</highVerticalSepMainHypothesis>
+    <highVerticalSepBackUpHypothesis>1500</highVerticalSepBackUpHypothesis>
+  </conflictParametersGroup>
+</conflictParametersRoot>

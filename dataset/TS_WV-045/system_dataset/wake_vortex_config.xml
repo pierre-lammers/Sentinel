@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WakeVortexSystemConfiguration>
+    <!-- Wake Vortex Monitoring System Configuration for SKYRADAR-WV-045 -->
+
+    <!-- System Status States -->
+    <SystemStatus>
+        <State id="OPERATIONAL" description="Full wake vortex monitoring active"/>
+        <State id="AVAILABLE" description="System available but not monitoring"/>
+        <State id="DEGRADED" description="Partial monitoring with reduced accuracy"/>
+        <State id="STANDBY" description="System on standby, no monitoring"/>
+    </SystemStatus>
+
+    <!-- Aircraft Wake Turbulence Categories (ICAO RECAT) -->
+    <WakeTurbulenceCategories>
+        <Category id="SUPER" weight_min_kg="136000" description="A380, AN-225"/>
+        <Category id="HEAVY" weight_min_kg="100000" description="B777, A330, B747"/>
+        <Category id="MEDIUM" weight_min_kg="15000" description="A320, B737"/>
+        <Category id="LIGHT" weight_min_kg="0" description="C172, PA28"/>
+    </WakeTurbulenceCategories>
+
+    <!-- Category Separation Requirements -->
+    <CategoryDifferential>
+        <!-- "At least two categories lower" means: -->
+        <Requirement leader="SUPER" follower="MEDIUM" separation_required="true"/>
+        <Requirement leader="SUPER" follower="LIGHT" separation_required="true"/>
+        <Requirement leader="HEAVY" follower="LIGHT" separation_required="true"/>
+        <!-- Not triggering combinations: -->
+        <Requirement leader="SUPER" follower="HEAVY" separation_required="false"/>
+        <Requirement leader="HEAVY" follower="MEDIUM" separation_required="false"/>
+        <Requirement leader="MEDIUM" follower="LIGHT" separation_required="false"/>
+        <Requirement leader="MEDIUM" follower="MEDIUM" separation_required="false"/>
+    </CategoryDifferential>
+
+    <!-- Configuration System Parameters (CSP) -->
+    <CSP>
+        <Parameter name="WV_PARALLEL_RWY_DISTANCE" value="760" unit="meters"
+                   description="Maximum runway separation for wake vortex monitoring (2500 feet)"/>
+    </CSP>
+
+    <!-- Variable System Parameters (VSP) -->
+    <VSP>
+        <Parameter name="WV_MIN_TIME_SEPARATION" value="120" unit="seconds"
+                   description="Minimum time-based separation for wake vortex (2 minutes)"/>
+        <Parameter name="WV_MIN_DISTANCE_SEPARATION" value="5556" unit="meters"
+                   description="Minimum distance-based separation (3 nautical miles)"/>
+        <Parameter name="WEATHER_DATA_SOURCE" value="METAR+AWOS"
+                   description="Source for meteorological data integration"/>
+    </VSP>
+
+    <!-- Flight Phases Relevant for Wake Vortex Monitoring -->
+    <FlightPhases>
+        <Phase id="APPROACH" monitoring="true" description="Final approach to runway"/>
+        <Phase id="DEPARTURE" monitoring="true" description="Takeoff and initial climb"/>
+        <Phase id="CRUISE" monitoring="false" description="En-route cruise phase"/>
+        <Phase id="GROUND" monitoring="false" description="Aircraft on ground"/>
+    </FlightPhases>
+
+    <!-- Weather Integration Parameters -->
+    <WeatherParameters>
+        <Parameter name="crosswind_component" unit="knots" description="Perpendicular wind component"/>
+        <Parameter name="temperature" unit="celsius" description="Air temperature"/>
+        <Parameter name="humidity" unit="percent" description="Relative humidity"/>
+        <!-- Higher crosswind = faster vortex dissipation = reduced separation needed -->
+        <!-- Lower temperature = longer vortex persistence = increased separation needed -->
+        <!-- Higher humidity = increased vortex visibility but not persistence -->
+    </WeatherParameters>
+
+    <!-- Quality Indicators for Position/Altitude Data -->
+    <QualityIndicators>
+        <Level id="HIGH" description="SSR Mode S with high confidence"/>
+        <Level id="MEDIUM" description="SSR Mode C or degraded Mode S"/>
+        <Level id="LOW" description="Primary radar only"/>
+    </QualityIndicators>
+
+    <!-- Emergency Transponder Codes -->
+    <EmergencyCodes>
+        <Code value="7500" description="Hijack"/>
+        <Code value="7600" description="Radio failure"/>
+        <Code value="7700" description="General emergency"/>
+    </EmergencyCodes>
+
+    <!-- Operational Modes -->
+    <OperationalModes>
+        <Mode id="TIME_BASED" flag="WV_TIME_BASED_MODE" value="true"
+              description="Use time-based separation (e.g., during strong tailwinds)"/>
+        <Mode id="DISTANCE_BASED" flag="WV_TIME_BASED_MODE" value="false"
+              description="Use distance-based separation (standard mode)"/>
+    </OperationalModes>
+
+    <!-- Override Flags -->
+    <OverrideFlags>
+        <Flag id="WV_EMERGENCY_OVERRIDE" default="false"
+              description="Suppress alerts for emergency aircraft"/>
+    </OverrideFlags>
+
+</WakeVortexSystemConfiguration>

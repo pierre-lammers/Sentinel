@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_MSAW-025-04"
+			testTitle="Generation of MSAW alerts (MSAW system operational transition)"
+			testObjective="This test verifies that SKYRADAR properly generates MSAW alerts when MSAW system transitions from STANDBY to OPERATIONAL status.&#xa;
+			Conditions for MSAW alert generation are:&#xa;
+1) The MSAW system status is equal to OPERATIONAL. &#xa;
+2) The track altitude is below the MSA threshold defined for the current sector. &#xa;
+3) The track is in APPROACH or DEPARTURE flight phase. &#xa;
+4) The track vertical speed indicates descent or level flight (not climbing above MIN_CLIMB_RATE=500 ft/min). &#xa;
+5) The track is located within a monitored airspace zone where MSAW is active. &#xa;
+6) The track has valid altitude data with quality indicator equal to HIGH or MEDIUM. &#xa;
+7) The flag MSAW_EMERGENCY_OVERRIDE is set to false or the track squawk code is NOT emergency (7500/7600/7700).&#xa;
+- 1st step: MSAW system status is STANDBY, no MSAW alert should be generated.&#xa;
+- 2nd step: MSAW system status transitions to OPERATIONAL, MSAW alert should be generated.&#xa;
+&#xa;
+Track altitude = 2400ft, MSA threshold = 3000ft. MIN_CLIMB_RATE=500 ft/min. MSAW_EMERGENCY_OVERRIDE=false.&#xa;
+All conditions are met to generate MSAW alert when system becomes OPERATIONAL."
+			requirement1="SKYRADAR-MSAW-025" requirementCMATS1="SKYRADAR-MSAW-025"
+			historyDate1="15/09/2024"
+			historyDate2="12/11/2024"
+			historyEcrId1="CMATS_ISD88"
+			historyEcrId2="FRSKYRADAR-8213"
+			historyVersion1="4.2"
+			actionComment="Track is located in APPROACH_ZONE_01 with altitude 2400ft below MSA=3000ft. MSAW system transitions to OPERATIONAL."
+			actionDescription="Track is in approach phase with altitude below MSA. When MSAW system becomes OPERATIONAL, alert should be generated.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="BAW321" cfl="0" cflUnity="F" arrivalRwy="09L" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="BAW321" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<MsawSystemUpdate time="3">
+		<MsawStatus status="STANDBY" emergencyOverride="false"/>
+	</MsawSystemUpdate>
+
+	<TrackUpdates time="5">
+		<TrackUpdate trackNumber="1" measFlightLevel="2400" measFlightLevelAge="0" posX="5" posY="-20" cartSpeedX="100" cartSpeedY="-50" identStr="1" baroAltitude="2400" baroAltitudeQNHCor="0" rocRodRate="-400" altitudeQuality="HIGH" flightPhase="APPROACH">
+			<Mode3A value="7654"/>
+			<FlightPlan callsign="BAW321" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="09L"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="7000" resultDescription="No MSAW alert is generated because MSAW system status is STANDBY."
+				nextActionComment="At time 12, MSAW system is set to OPERATIONAL status.&#xa;
+				Track continues with altitude below MSA."
+				nextActionDescription="MSAW system transitions to OPERATIONAL. With all conditions met, MSAW alert should be generated.">
+		<Alerts alertType="MSAW" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- MISSING: The MsawSystemUpdate that should change status to OPERATIONAL is MISSING here! -->
+	<!-- This should be: <MsawSystemUpdate time="12"><MsawStatus status="OPERATIONAL" emergencyOverride="false"/></MsawSystemUpdate> -->
+
+	<TrackUpdates time="13">
+		<TrackUpdate trackNumber="1" measFlightLevel="2400" measFlightLevelAge="0" posX="8" posY="-25" cartSpeedX="100" cartSpeedY="-50" identStr="1" baroAltitude="2400" baroAltitudeQNHCor="0" rocRodRate="-450" altitudeQuality="HIGH" flightPhase="APPROACH">
+			<Mode3A value="7654"/>
+			<FlightPlan callsign="BAW321" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="09L"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="15000" resultDescription="MSAW alert is generated because MSAW system is OPERATIONAL and altitude is below MSA.">
+		<Alerts alertType="MSAW" trackNum="1" alertGenerated="true">
+			<MsawAlert severity="WARNING" threshold="3000" currentAltitude="2400" sector="APPROACH_ZONE_01"/>
+		</Alerts>
+	</TestResult>
+</UpdateRoot>

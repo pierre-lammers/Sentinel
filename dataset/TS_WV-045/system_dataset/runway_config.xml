@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RunwayConfiguration>
+    <!-- Runway Configuration for Wake Vortex Testing -->
+
+    <!-- Primary Runway for Testing -->
+    <Runway id="09R" heading="090" length_m="3500" width_m="45">
+        <Threshold latitude="52.3105" longitude="4.7683"/>
+        <Approach type="ILS" category="CAT-III"/>
+        <WakeVortexMonitoring enabled="true"/>
+    </Runway>
+
+    <!-- Parallel Runway (within 760m threshold) -->
+    <Runway id="09L" heading="090" length_m="3400" width_m="45">
+        <Threshold latitude="52.3156" longitude="4.7695"/>
+        <Approach type="ILS" category="CAT-II"/>
+        <WakeVortexMonitoring enabled="true"/>
+        <ParallelSeparation from="09R" distance_m="650" note="Within WV monitoring threshold"/>
+    </Runway>
+
+    <!-- Opposite Direction -->
+    <Runway id="27L" heading="270" length_m="3500" width_m="45">
+        <Threshold latitude="52.3105" longitude="4.8234"/>
+        <Approach type="ILS" category="CAT-III"/>
+        <WakeVortexMonitoring enabled="true"/>
+        <OppositeOf runway="09R"/>
+    </Runway>
+
+    <Runway id="27R" heading="270" length_m="3400" width_m="45">
+        <Threshold latitude="52.3156" longitude="4.8246"/>
+        <Approach type="ILS" category="CAT-II"/>
+        <WakeVortexMonitoring enabled="true"/>
+        <OppositeOf runway="09L"/>
+    </Runway>
+
+    <!-- Distant Parallel (beyond 760m threshold - no WV monitoring) -->
+    <Runway id="06" heading="060" length_m="3300" width_m="45">
+        <Threshold latitude="52.2987" longitude="4.7501"/>
+        <Approach type="ILS" category="CAT-I"/>
+        <WakeVortexMonitoring enabled="false"/>
+        <ParallelSeparation from="09R" distance_m="1520" note="Beyond WV monitoring threshold"/>
+    </Runway>
+
+    <!-- Reference Points for Position Calculations -->
+    <ReferencePoints>
+        <Point id="09R_FINAL_5NM" latitude="52.3105" longitude="4.6845"
+               description="5 NM final approach to 09R"/>
+        <Point id="09R_FINAL_3NM" latitude="52.3105" longitude="4.7234"
+               description="3 NM final approach to 09R"/>
+        <Point id="09L_FINAL_5NM" latitude="52.3156" longitude="4.6857"
+               description="5 NM final approach to 09L"/>
+    </ReferencePoints>
+
+</RunwayConfiguration>

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_RNP-046-01"
+			testTitle="RNP Approach Containment Monitoring (RNP monitoring system status)"
+			testObjective="This test checks that SKYRADAR generates RNP containment violation alerts only when the RNP monitoring system status is OPERATIONAL.&#xa;
+			Conditions for RNP containment violation alert generation are:&#xa;
+1) The RNP monitoring system status is equal to OPERATIONAL. &#xa;
+2) The track is executing an RNP approach procedure with approach type RNP or RNP_AR. &#xa;
+3) The track flight plan indicates the aircraft RNP capability value is adequate for the published procedure. &#xa;
+4) The track lateral deviation from the published RNP approach path exceeds the RNP containment limit. &#xa;
+5) The track is located within the RNP procedure coverage volume (final approach segment beyond FAF). &#xa;
+6) The track GNSS integrity status is AVAILABLE with HPL less than the alert limit. &#xa;
+7) The flag RNP_VISUAL_OVERRIDE is false or the track has not reported visual conditions.&#xa;
+- 1st step: RNP monitoring system status is DEGRADED, this should NOT generate RNP containment violation alert.&#xa;
+- 2nd step: RNP monitoring system status is set to OPERATIONAL, this should generate RNP containment violation alert.&#xa;
+- 3rd step: RNP monitoring system status is set back to UNAVAILABLE, this should NOT generate RNP containment violation alert.&#xa;
+
+All conditions, except the 1st one, are met to generate RNP containment violation alert. RNP_VISUAL_OVERRIDE = false."
+			requirement1="SKYRADAR-RNP-046" requirementCMATS1="SKYRADAR-RNP-046"
+			historyDate1="15/09/2024"
+			historyEcrId1="FRSKYRADAR-8200"
+			historyVersion1="1.0"
+			actionComment="Aircraft BAW101 is on RNP AR 0.3 approach to runway 02C with lateral deviation exceeding containment limit (0.75 NM > 0.6 NM). RNP monitoring system status is initially DEGRADED."
+			actionDescription="Aircraft BAW101 is executing RNP AR approach with excessive lateral deviation. All conditions to generate RNP containment violation alert are fulfilled except the first one (RNP monitoring system status is DEGRADED).&#xa;
+			As a result, no RNP containment violation alert should be generated.">
+
+	<!-- Flight Plan Setup: RNP AR 0.3 approach to runway 02C -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="BAW101" cfl="1500" cflUnity="F"
+	                  arrivalRwy="02C" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+
+	<!-- Ident Update: Associate track with flight plan -->
+	<IdentUpdate recNum="1" time="2000" callsign="BAW101" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- System Configuration: RNP monitoring system DEGRADED -->
+	<SystemConfigUpdate time="3000">
+		<RNPMonitoringConfig status="DEGRADED"/>
+		<RNPProcedureDatabase>
+			<Procedure runway="02C" approachType="RNP_AR" requiredRNP="0.3"/>
+		</RNPProcedureDatabase>
+		<SystemParameter name="RNP_VISUAL_OVERRIDE" value="false"/>
+		<SystemParameter name="RNP_DEVIATION_TIME_THRESHOLD" value="5" unit="seconds"/>
+	</SystemConfigUpdate>
+
+	<!-- Track Update: Aircraft on RNP approach with excessive lateral deviation -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1500" measFlightLevelAge="0"
+		             posX="103.9822" posY="1.3544" cartSpeedX="-80" cartSpeedY="100"
+		             identStr="1" baroAltitude="1500" baroAltitudeQNHCor="0" rocRodRate="-300">
+			<Mode3A value="2345"/>
+			<FlightPlan callsign="BAW101" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="2" runway="02C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP_AR" approachSegment="FINAL"
+			        lateralDeviation="0.75" deviationExceededDuration="6"
+			        publishedPathDistance="5.2"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.15" satelliteCount="12" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 1: System DEGRADED - No alert expected -->
+	<TestResult resultTimeInMilliSec="5000"
+	            resultDescription="RNP monitoring system is DEGRADED. No RNP containment violation alert should be generated."
+	            nextActionComment="RNP monitoring system status is updated to OPERATIONAL at time 10000.&#xa;
+	            Aircraft continues with excessive lateral deviation from published RNP path."
+	            nextActionDescription="RNP monitoring system transitions to OPERATIONAL. All conditions for RNP containment violation alert are now met. Alert should be generated.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- System Status Update: RNP monitoring system becomes OPERATIONAL -->
+	<SystemConfigUpdate time="10000">
+		<RNPMonitoringConfig status="OPERATIONAL"/>
+	</SystemConfigUpdate>
+
+	<!-- Track Update: Continue with excessive lateral deviation -->
+	<TrackUpdates time="12000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1400" measFlightLevelAge="0"
+		             posX="103.9860" posY="1.3600" cartSpeedX="-80" cartSpeedY="100"
+		             identStr="1" baroAltitude="1400" baroAltitudeQNHCor="0" rocRodRate="-300">
+			<Mode3A value="2345"/>
+			<FlightPlan callsign="BAW101" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="2" runway="02C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP_AR" approachSegment="FINAL"
+			        lateralDeviation="0.78" deviationExceededDuration="11"
+			        publishedPathDistance="3.8"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.16" satelliteCount="12" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 2: System OPERATIONAL - Alert expected -->
+	<TestResult resultTimeInMilliSec="12000"
+	            resultDescription="RNP monitoring system is OPERATIONAL. RNP containment violation alert should be generated."
+	            nextActionComment="RNP monitoring system status is updated to UNAVAILABLE at time 17000.&#xa;
+	            Aircraft continues with excessive lateral deviation from published RNP path."
+	            nextActionDescription="RNP monitoring system transitions to UNAVAILABLE. Alert should no longer be generated.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="true">
+			<RNPAlert alertReason="LATERAL_DEVIATION_EXCEEDED"
+			         lateralDeviation="0.78" containmentLimit="0.6"
+			         exceedanceDuration="11" requiredRNP="0.3"/>
+		</Alerts>
+	</TestResult>
+
+	<!-- System Status Update: RNP monitoring system becomes UNAVAILABLE -->
+	<SystemConfigUpdate time="17000">
+		<RNPMonitoringConfig status="UNAVAILABLE"/>
+	</SystemConfigUpdate>
+
+	<!-- Track Update: Continue with excessive lateral deviation -->
+	<TrackUpdates time="19000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1200" measFlightLevelAge="0"
+		             posX="103.9880" posY="1.3640" cartSpeedX="-80" cartSpeedY="100"
+		             identStr="1" baroAltitude="1200" baroAltitudeQNHCor="0" rocRodRate="-300">
+			<Mode3A value="2345"/>
+			<FlightPlan callsign="BAW101" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="2" runway="02C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP_AR" approachSegment="FINAL"
+			        lateralDeviation="0.72" deviationExceededDuration="18"
+			        publishedPathDistance="2.1"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.17" satelliteCount="12" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 3: System UNAVAILABLE - No alert expected -->
+	<TestResult resultTimeInMilliSec="19000"
+	            resultDescription="RNP monitoring system is UNAVAILABLE. No RNP containment violation alert should be generated.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+</UpdateRoot>

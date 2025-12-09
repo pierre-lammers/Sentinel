@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ScenarioDefinition scenarioId="scenario_SKYRADAR-WV-045-02"
+                    scenarioDescription="Validates that wake vortex separation alerts are only generated when both aircraft are in APPROACH or DEPARTURE flight phase on the same runway. Tests condition C2: Flight phase and runway requirements.">
+
+    <!-- Test Objective: Verify wake vortex alert generation based on flight phase
+
+         Test Strategy:
+         - Setup: Two aircraft (HEAVY leading, LIGHT following) same runway
+         - Baseline (t=5s): Follower in CRUISE phase → No alert expected
+         - Transition (t=10s): Follower changes to APPROACH phase
+         - Verification (t=15s): Both in APPROACH → Alert expected
+         - Secondary (t=20s): Follower changes to GROUND
+         - Final Check (t=25s): Leader APPROACH, Follower GROUND → No alert
+
+         Conditions Status:
+         C1: 🟡 Implicitly satisfied (system OPERATIONAL)
+         C2: ✅ EXPLICITLY TESTED (flight phase varied: CRUISE→APPROACH→GROUND)
+         C3: 🟡 Implicitly satisfied (HEAVY→LIGHT, 2 categories)
+         C4: 🟡 Implicitly satisfied (separation 2800m < dynamic minimum)
+         C5: 🟡 Implicitly satisfied (both qualityIndicator HIGH)
+         C6: 🟡 Implicitly satisfied (distance-based mode, separation < 5556m)
+         C7: 🟡 Implicitly satisfied (override false, no emergency codes)
+    -->
+
+    <!-- SETUP: Define two aircraft flight plans -->
+    <FlightPlanUpdate time="0">
+        <!-- Leader: Heavy aircraft (Boeing 777) -->
+        <FlightPlan trackNum="201" callsign="BAW15" aircraftType="B77W"
+                    departureAirport="EGLL" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="HEAVY"
+                    arrivalRunway="09R"/>
+
+        <!-- Follower: Light aircraft (King Air) -->
+        <FlightPlan trackNum="202" callsign="PH-KLM" aircraftType="BE20"
+                    departureAirport="EHLE" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="LIGHT"
+                    arrivalRunway="09R"/>
+    </FlightPlanUpdate>
+
+    <!-- SETUP: Initialize track identities -->
+    <IdentUpdate time="1000">
+        <Ident trackNum="201" callsign="BAW15" squawkCode="4512"/>
+        <Ident trackNum="202" callsign="PH-KLM" squawkCode="4513"/>
+    </IdentUpdate>
+
+    <!-- CONFIG: System parameters and weather conditions -->
+    <SystemConfigUpdate time="2000">
+        <!-- Wake vortex system OPERATIONAL -->
+        <WakeVortexSystemStatus status="OPERATIONAL"/>
+
+        <!-- Weather conditions: Moderate crosswind -->
+        <WeatherData crosswind="8" temperature="12" humidity="65"/>
+
+        <!-- Distance-based separation mode -->
+        <SystemFlag name="WV_TIME_BASED_MODE" value="false"/>
+        <SystemFlag name="WV_EMERGENCY_OVERRIDE" value="false"/>
+
+        <!-- System parameters -->
+        <Parameter name="WV_MIN_DISTANCE_SEPARATION" value="5556"/>
+        <Parameter name="WV_PARALLEL_RWY_DISTANCE" value="760"/>
+    </SystemConfigUpdate>
+
+    <!-- BASELINE: Leader APPROACH, Follower CRUISE (not monitoring phase) -->
+    <TrackUpdates time="5000">
+        <!-- Leader: On final approach, 5 NM out -->
+        <TrackUpdate trackNum="201" latitude="52.3105" longitude="4.6845"
+                     altitude="1800" heading="090" groundSpeed="160"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+
+        <!-- Follower: Still in CRUISE phase, 3.5 NM out (2800m behind) -->
+        <TrackUpdate trackNum="202" latitude="52.3105" longitude="4.7096"
+                     altitude="3000" heading="090" groundSpeed="180"
+                     flightPhase="CRUISE" qualityIndicator="HIGH"/>
+    </TrackUpdates>
+
+    <!-- TEST 1: Follower in CRUISE → No alert (not in APPROACH/DEPARTURE phase) -->
+    <TestResult resultTimeInMilliSec="5000"
+                resultDescription="Baseline: Follower aircraft is in CRUISE flight phase (not APPROACH or DEPARTURE). Alert should NOT be generated even though separation is insufficient (2800m between HEAVY and LIGHT).">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="202" alertGenerated="false"/>
+    </TestResult>
+
+    <!-- TRANSITION: Follower transitions to APPROACH phase -->
+    <SystemStatusUpdate time="10000">
+        <TrackPhaseChange trackNum="202" newPhase="APPROACH"
+                          reason="Established on ILS, below 3000ft"/>
+    </SystemStatusUpdate>
+
+    <!-- VERIFICATION: Both aircraft now in APPROACH phase -->
+    <TrackUpdates time="15000">
+        <!-- Leader: Continuing approach, 3 NM out -->
+        <TrackUpdate trackNum="201" latitude="52.3105" longitude="4.7234"
+                     altitude="1100" heading="090" groundSpeed="150"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+
+        <!-- Follower: Now APPROACH phase, still 2800m behind leader -->
+        <TrackUpdate trackNum="202" latitude="52.3105" longitude="4.7485"
+                     altitude="1400" heading="090" groundSpeed="140"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+    </TrackUpdates>
+
+    <!-- TEST 2: Both in APPROACH → Alert SHOULD be generated -->
+    <TestResult resultTimeInMilliSec="15000"
+                resultDescription="Condition triggered: Both aircraft now in APPROACH phase on same runway 09R. Alert SHOULD be generated for insufficient separation (2800m) between HEAVY leader and LIGHT follower.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="202" alertGenerated="true"
+                leadTrack="201" separation="2800" separationUnit="meters"
+                alertSeverity="HIGH" alertMessage="Wake vortex separation infringement: HEAVY to LIGHT"/>
+    </TestResult>
+
+    <!-- SECONDARY TRANSITION: Follower lands (GROUND phase) -->
+    <SystemStatusUpdate time="20000">
+        <TrackPhaseChange trackNum="202" newPhase="GROUND"
+                          reason="Touched down runway 09R"/>
+    </SystemStatusUpdate>
+
+    <!-- FINAL CHECK: Leader still APPROACH, Follower GROUND -->
+    <TrackUpdates time="25000">
+        <!-- Leader: Short final, 0.5 NM out -->
+        <TrackUpdate trackNum="201" latitude="52.3105" longitude="4.7612"
+                     altitude="300" heading="090" groundSpeed="140"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+
+        <!-- Follower: On ground, rolling out -->
+        <TrackUpdate trackNum="202" latitude="52.3105" longitude="4.7701"
+                     altitude="0" heading="090" groundSpeed="60"
+                     flightPhase="GROUND" qualityIndicator="HIGH"/>
+    </TrackUpdates>
+
+    <!-- TEST 3: Follower GROUND → No alert (not in monitored phase) -->
+    <TestResult resultTimeInMilliSec="25000"
+                resultDescription="Recovery: Follower aircraft is now in GROUND phase (not APPROACH or DEPARTURE). Alert should NOT be generated even though aircraft are close together.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="202" alertGenerated="false"/>
+    </TestResult>
+
+</ScenarioDefinition>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_CPDLC-047-01"
+			testTitle="CPDLC message timeout alert (response timeout threshold validation)"
+			testObjective="This test checks that SKYRADAR generates CPDLC timeout alerts when elapsed time since message transmission exceeds CPDLC_RESPONSE_TIMEOUT threshold.&#xa;
+			Conditions for CPDLC timeout alert generation are:&#xa;
+1) The CPDLC system status is equal to OPERATIONAL. &#xa;
+2) The track has an active CPDLC connection with logon status set to CONNECTED and data authority is CURRENT. &#xa;
+3) A CPDLC uplink message of type CLEARANCE or INSTRUCTION has been transmitted to the aircraft with message status equal to SENT. &#xa;
+4) The elapsed time since message transmission exceeds the response timeout threshold (CPDLC_RESPONSE_TIMEOUT). &#xa;
+5) No CPDLC downlink response (WILCO, UNABLE, STANDBY, or ROGER) has been received from the aircraft for the pending message. &#xa;
+6) The message criticality level is set to HIGH or SAFETY_CRITICAL requiring mandatory acknowledgment. &#xa;
+7) The flag CPDLC_VOICE_BACKUP_ENABLED is set to true and the controller position has active voice communication capability.&#xa;
+- 1st step: Message sent at t=5000ms, elapsed time=40s < 60s timeout, no alert should be generated.&#xa;
+- 2nd step: At t=70000ms, elapsed time=65s > 60s timeout, CPDLC timeout alert should be generated.&#xa;
+- 3rd step: At t=80000ms, response received, alert should be cleared.&#xa;
+&#xa;
+CPDLC_RESPONSE_TIMEOUT = 60 seconds for CLEARANCE messages. System status=OPERATIONAL. Connection=CONNECTED. Message type=CLEARANCE. Criticality=HIGH. Voice backup=true.&#xa;
+All conditions, except the 4th one (elapsed time), are met to generate CPDLC timeout alert."
+			requirement1="SKYRADAR-CPDLC-047" requirementCMATS1="SKYRADAR-CPDLC-047"
+			historyDate1="15/09/2024"
+			historyDate2="12/11/2024"
+			historyEcrId1="CMATS_ISD91"
+			historyEcrId2="FRSKYRADAR-8220"
+			historyVersion1="4.2"
+			actionComment="Track has active CPDLC connection. CLEARANCE message sent with 60-second timeout threshold."
+			actionDescription="Track has CPDLC connection established. A CLEARANCE message is transmitted requiring acknowledgment. All conditions for timeout alert are fulfilled except elapsed time.&#xa;
+			As a result, no timeout alert should be generated until threshold is exceeded.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="UAE234" cfl="350" cflUnity="F" arrivalRwy="05R" arrivalAirport="OMDB" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="UAE234" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<CpdlcSystemUpdate time="3">
+		<CpdlcStatus status="OPERATIONAL" voiceBackupEnabled="true"/>
+	</CpdlcSystemUpdate>
+
+	<CpdlcConnectionUpdate time="4">
+		<Connection trackNum="1" logonStatus="CONNECTED" dataAuthority="CURRENT" voiceFrequency="121.5" voiceCapability="ACTIVE"/>
+	</CpdlcConnectionUpdate>
+
+	<CpdlcMessageUpdate time="5000">
+		<UplinkMessage trackNum="1" messageId="MSG_001" messageType="CLEARANCE" messageContent="CLEARED TO FL390 VIA DIRECT LAKOP" messageStatus="SENT" transmissionTime="5000" criticalityLevel="HIGH" responseTimeout="60000" responseReceived="false"/>
+	</CpdlcMessageUpdate>
+
+	<TrackUpdates time="5100">
+		<TrackUpdate trackNumber="1" measFlightLevel="35000" measFlightLevelAge="0" posX="120" posY="45" cartSpeedX="200" cartSpeedY="-20" identStr="1" baroAltitude="35000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" flightPhase="CRUISE">
+			<Mode3A value="2341"/>
+			<FlightPlan callsign="UAE234" ifpsFlightId="1" airportArr="OMDB" flightCatFr1Fr2="0" runway="05R"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="45000" resultDescription="No CPDLC timeout alert is generated because elapsed time (40s) is below response timeout threshold (60s)."
+				nextActionComment="Time advances to 70000ms. Elapsed time since message transmission is now 65 seconds, exceeding 60s threshold.&#xa;
+				No response received from aircraft."
+				nextActionDescription="Elapsed time exceeds timeout threshold. This should trigger a CPDLC timeout alert and voice reversion.">
+		<Alerts alertType="CPDLC_TIMEOUT" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<TrackUpdates time="70000">
+		<TrackUpdate trackNumber="1" measFlightLevel="35000" measFlightLevelAge="0" posX="140" posY="40" cartSpeedX="200" cartSpeedY="-20" identStr="1" baroAltitude="35000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" flightPhase="CRUISE">
+			<Mode3A value="2341"/>
+			<FlightPlan callsign="UAE234" ifpsFlightId="1" airportArr="OMDB" flightCatFr1Fr2="0" runway="05R"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="70500" resultDescription="CPDLC timeout alert is generated because elapsed time (65s) exceeds response timeout threshold (60s)."
+				nextActionComment="At time 80000ms, aircraft sends WILCO response.&#xa;
+				Message acknowledged by crew."
+				nextActionDescription="Response received from aircraft. CPDLC timeout alert should be cleared.">
+		<Alerts alertType="CPDLC_TIMEOUT" trackNum="1" alertGenerated="true">
+			<CpdlcTimeoutAlert severity="WARNING" messageId="MSG_001" elapsedTime="65" timeout="60" voiceReversionTriggered="true"/>
+		</Alerts>
+	</TestResult>
+
+	<CpdlcMessageUpdate time="80000">
+		<UplinkMessage trackNum="1" messageId="MSG_001" messageType="CLEARANCE" messageContent="CLEARED TO FL390 VIA DIRECT LAKOP" messageStatus="ACKNOWLEDGED" transmissionTime="5000" criticalityLevel="HIGH" responseTimeout="60000" responseReceived="true" responseType="WILCO" responseTime="80000"/>
+	</CpdlcMessageUpdate>
+
+	<TrackUpdates time="80100">
+		<TrackUpdate trackNumber="1" measFlightLevel="35000" measFlightLevelAge="0" posX="145" posY="38" cartSpeedX="200" cartSpeedY="-20" identStr="1" baroAltitude="35000" baroAltitudeQNHCor="0" rocRodRate="0" altitudeQuality="HIGH" flightPhase="CRUISE">
+			<Mode3A value="2341"/>
+			<FlightPlan callsign="UAE234" ifpsFlightId="1" airportArr="OMDB" flightCatFr1Fr2="0" runway="05R"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="80500" resultDescription="No CPDLC timeout alert is generated because response (WILCO) has been received from aircraft.">
+		<Alerts alertType="CPDLC_TIMEOUT" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+</UpdateRoot>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_ARR-044-02"
+			testTitle="Time-Based Arrival Sequencing Optimization (ARRIVAL flight phase with valid time-to-threshold)"
+			testObjective="This test verifies that SKYRADAR only adjusts arrival sequence positions when the track is in ARRIVAL flight phase with valid time-to-threshold prediction.&#xa;
+			Conditions for automatic arrival sequence adjustment are:&#xa;
+1) The AMAN (Arrival Manager) system status is equal to OPERATIONAL. &#xa;
+2) The track is in ARRIVAL flight phase with valid time-to-threshold prediction. &#xa;
+3) The track is located within the Extended Terminal Maneuvering Area (E-TMA) boundary. &#xa;
+4) The calculated arrival delay is greater than CSP: AMAN_MIN_DELAY_THRESHOLD (120 seconds). &#xa;
+5) The track has an assigned arrival runway with active AMAN sequencing enabled. &#xa;
+6) The potential sequence position change would not violate minimum time-based separation (VSP: TBS_MIN_SEPARATION_TIME = 90 seconds).&#xa;
+- 1st step: Track in CRUISE phase, sequence adjustment should NOT occur.&#xa;
+- 2nd step: Track transitions to ARRIVAL phase with valid time-to-threshold, sequence adjustment SHOULD occur.&#xa;
+- 3rd step: Time-to-threshold becomes invalid, sequence adjustment should NOT occur.&#xa;
+&#xa;
+CSP: AMAN_MIN_DELAY_THRESHOLD=120 seconds. VSP: TBS_MIN_SEPARATION_TIME=90 seconds.&#xa;
+All conditions except C2 are met for automatic sequence adjustment."
+			requirement1="SKYRADAR-ARR-044" requirementCMATS1="SKYRADAR-ARR-044"
+			historyDate1="15/06/2023"
+			historyDate2="12/09/2024"
+			historyDate3="20/11/2025"
+			historyEcrId1="CMATS_ISD78"
+			historyEcrId2="FRSKYRADAR-6421"
+			historyEcrId3="FRSKYRADAR-8126"
+			historyVersion1="4.0"
+			actionComment="Track AFR205 transitions through flight phases with varying time-to-threshold validity to test condition C2."
+			actionDescription="Track is configured with all conditions satisfied except flight phase and time-to-threshold validity. Phase transitions test whether sequence adjustment depends on ARRIVAL phase with valid prediction.">
+
+	<!-- Flight Plan Definition -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="AFR205" cfl="80" cflUnity="F"
+	                  arrivalRwy="25R" arrivalAirport="EHAM" isControlled="true" flightRules="I"/>
+
+	<!-- Couple flight plan to track -->
+	<IdentUpdate recNum="1" time="2000" callsign="AFR205" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- Set AMAN status to OPERATIONAL -->
+	<SystemStatusUpdate time="3000">
+		<AMANSystemStatus status="OPERATIONAL"/>
+	</SystemStatusUpdate>
+
+	<!-- Configure runway with AMAN sequencing enabled -->
+	<DatapageAMANUpdate time="4000">
+		<RunwayConfig runwayId="25R" amanSequencingEnabled="true"/>
+	</DatapageAMANUpdate>
+
+	<!-- BASELINE: Track in CRUISE phase (not ARRIVAL), should NOT generate alert -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="8000" measFlightLevelAge="0"
+		             posX="50.0" posY="50.0" cartSpeedX="120" cartSpeedY="-80"
+		             identStr="1" baroAltitude="8000" baroAltitudeQNHCor="0" rocRodRate="0">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AFR205" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="CRUISE" timeToThreshold="1400" timeToThresholdValid="true"
+			          arrivalDelay="165" currentSequencePosition="6" potentialSequencePosition="4"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="6000"
+	            resultDescription="Baseline: Track in CRUISE phase, sequence adjustment should NOT be generated."
+	            nextActionComment="Track transitions to ARRIVAL phase at time 10000 with valid time-to-threshold."
+	            nextActionDescription="With track in ARRIVAL phase and valid time-to-threshold prediction, sequence adjustment alert should be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- TRANSITION: Track enters ARRIVAL phase with valid time-to-threshold -->
+	<TrackUpdates time="10000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7000" measFlightLevelAge="0"
+		             posX="60.0" posY="45.0" cartSpeedX="100" cartSpeedY="-90"
+		             identStr="1" baroAltitude="7000" baroAltitudeQNHCor="0" rocRodRate="-650">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AFR205" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1050" timeToThresholdValid="true"
+			          arrivalDelay="170" currentSequencePosition="6" potentialSequencePosition="4"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="11000"
+	            resultDescription="Track in ARRIVAL phase with valid time-to-threshold, sequence adjustment SHOULD be generated."
+	            nextActionComment="Time-to-threshold prediction becomes invalid at time 15000."
+	            nextActionDescription="With invalid time-to-threshold prediction, sequence adjustment alert should NOT be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true">
+			<AMANAlert currentPosition="6" newPosition="4" delaySeconds="170"/>
+		</Alerts>
+	</TestResult>
+
+	<!-- TRANSITION: Time-to-threshold becomes invalid -->
+	<TrackUpdates time="15000">
+		<TrackUpdate trackNumber="1" measFlightLevel="6000" measFlightLevelAge="0"
+		             posX="65.0" posY="40.0" cartSpeedX="100" cartSpeedY="-90"
+		             identStr="1" baroAltitude="6000" baroAltitudeQNHCor="0" rocRodRate="-650">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="AFR205" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="0" timeToThresholdValid="false"
+			          arrivalDelay="175" currentSequencePosition="6" potentialSequencePosition="4"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="16000"
+	            resultDescription="Track in ARRIVAL phase but time-to-threshold invalid, sequence adjustment should NOT be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+</UpdateRoot>

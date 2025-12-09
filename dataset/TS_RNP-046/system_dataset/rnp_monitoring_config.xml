@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RNPMonitoringSystemConfig xmlns="N_DATA_MODEL_HLFT">
+	<!-- RNP Monitoring System Configuration -->
+	<!-- This configuration defines the operational parameters for RNP approach monitoring -->
+
+	<!-- System Status: OPERATIONAL, DEGRADED, UNAVAILABLE -->
+	<SystemStatus status="OPERATIONAL"/>
+
+	<!-- RNP Containment Monitoring Parameters -->
+	<ContainmentMonitoring>
+		<!-- Deviation time threshold: Time in seconds that lateral deviation must exceed containment limit -->
+		<DeviationTimeThreshold value="5" unit="seconds"/>
+
+		<!-- Alert limit multipliers for different RNP values -->
+		<AlertLimits>
+			<RNPValue value="0.1" alertLimit="0.2" containmentLimit="0.2"/>
+			<RNPValue value="0.3" alertLimit="0.6" containmentLimit="0.6"/>
+			<RNPValue value="1.0" alertLimit="2.0" containmentLimit="2.0"/>
+		</AlertLimits>
+	</ContainmentMonitoring>
+
+	<!-- GNSS Integrity Monitoring -->
+	<GNSSIntegrityMonitoring>
+		<!-- HPL (Horizontal Protection Level) alert limits for different RNP values -->
+		<HPLAlertLimits>
+			<RNPValue value="0.1" hplAlertLimit="0.185"/>
+			<RNPValue value="0.3" hplAlertLimit="0.556"/>
+			<RNPValue value="1.0" hplAlertLimit="1.852"/>
+		</HPLAlertLimits>
+	</GNSSIntegrityMonitoring>
+
+	<!-- Visual Override Configuration -->
+	<VisualOverride>
+		<!-- When true, allows visual override of RNP alerts when runway in sight -->
+		<Flag name="RNP_VISUAL_OVERRIDE" value="false"/>
+	</VisualOverride>
+
+	<!-- Approach Segment Definitions -->
+	<ApproachSegments>
+		<Segment name="INITIAL" monitoringActive="false"/>
+		<Segment name="INTERMEDIATE" monitoringActive="false"/>
+		<Segment name="FINAL" monitoringActive="true"/>
+		<Segment name="MISSED" monitoringActive="false"/>
+	</ApproachSegments>
+</RNPMonitoringSystemConfig>

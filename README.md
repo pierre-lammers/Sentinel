@@ -14,7 +14,9 @@ uv sync
 
 ## Create the Chroma vector database
 
+```bash
 make rag
+```
 
 ## Running the Server
 

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_STCA-041-03"
+			testTitle="Suppression of STCA conflicts due to NTZ processing (heading gap validation)"
+			testObjective="This test checks that SKYRADAR flags alerts as suppressed only when heading gap between each aircraft and the runway axis is lower than MAX_DELTA_HEADING (20 degrees).
+			Conditions for STCA suppression due to NTZ are:
+1) The associated NTZ area is active.
+2) The status of the NTZ areas manager is equal to OPERATIONAL.
+3) Heading gap between each aircraft and the runway axis is lower than a CSP: MAX_DELTA_HEADING = 20 degrees.
+4) Current distance between the aircraft is kept above a VSP: MinimalDistance=0.
+5) Each track is located within a different NOZ associated with an offline defined parallel approach pair of runways.
+6) The parallel approach pair is in INDEPENDENT mode.
+7) The flag STCA_PARALLEL_APP_FPL_CHECK_FLAG is set to false or the runway of each track coupled FPL (if assigned) matches the runway linked to the NOZ where the track is located.
+- 1st step has aircraft with heading gap > 20 degrees from runway axis (90 degrees), this should NOT suppress the raised STCA conflict.
+- In 2nd step, aircraft heading is adjusted to be within 20 degrees of runway axis, this should suppress the raised STCA conflict.
+- In 3rd step, one aircraft heading gap exceeds 20 degrees again, this should NOT suppress the raised STCA conflict.
+
+CSP: MAX_DELTA_HEADING=20 degree and VSP: MinimalDistance=0. STCA_PARALLEL_APP_FPL_CHECK_FLAG = false. parallelApproachPair::modeOnStartup=INDEPENDENT. Runway axis heading = 90 degrees.
+All conditions, except the 3rd one, are met to suppress STCA conflict due to NTZ processing."
+			requirement1="SKYRADAR-STCA-041" requirementCMATS1="SKYRADAR-STCA-041"
+			historyDate1="11/03/2022"
+			historyDate2="23/05/2024"
+			historyDate3="25/08/2025"
+			historyEcrId1="CMATS_ISD63"
+			historyEcrId2="FRSKYRADAR-5251"
+			historyEcrId3="FRSKYRADAR-7459"
+			historyVersion1="3.0"
+			actionComment="2 tracks are located in their respective NOZ and are also close enough to generate a STCA conflict. Initial aircraft heading is significantly off runway axis."
+			actionDescription="2 tracks are close enough to generate a STCA conflict. All the conditions to suppress the STCA conflict are fulfilled except the third one (heading gap > MAX_DELTA_HEADING).
+			As a result a STCA conflict should be raised with no suppressed status.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="DLH01" cfl="0" cflUnity="F" arrivalRwy="02L" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+	<FlightPlanUpdate recNum="2" time="2" callsign="DLH02" cfl="0" cflUnity="F" arrivalRwy="02R" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="3" callsign="DLH01" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+	<IdentUpdate recNum="2" time="4" callsign="DLH02" couplingStatus="AUTO" fplNum="2" sysTrackNum="2"/>
+
+	<DatapageNtzUpdate time="5">
+		<NTZAreaDatapageUpdate>
+			<NTZAreaElement isActive="true" name="ntz2"/>
+		</NTZAreaDatapageUpdate>
+	</DatapageNtzUpdate>
+
+	<BnsUpdate time="6">
+		<BnsPRM status="OPERATIONAL"/>
+	</BnsUpdate>
+
+	<TrackUpdates time="7">
+		<TrackUpdate trackNumber="1" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="29.5" cartSpeedX="60" cartSpeedY="95" identStr="1" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH01" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+		<TrackUpdate trackNumber="2" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="27.5" cartSpeedX="55" cartSpeedY="90" identStr="2" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH02" ifpsFlightId="2" airportArr="WSSS" flightCatFr1Fr2="0" runway="02R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="10000" resultDescription="A STCA conflict is raised with no suppressed status because heading gap exceeds MAX_DELTA_HEADING (20 degrees). Aircraft heading ~58 degrees off runway axis (90 degrees)."
+				nextActionComment="Aircraft velocities are adjusted at time 12 to align heading closer to runway axis (within 20 degrees).
+				Tracks are positioned in order to generate a STCA conflict."
+				nextActionDescription="The 2 tracks should generate a STCA conflict and heading gap is now within acceptable range. This configuration should allow SKYRADAR to generate a STCA conflict with suppressed status.">
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cdc>
+				<CdcSTCA trackNum2="2" conflictStatus="REAL"/>
+			</Cdc>
+		</Alerts>
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cat004>
+				<Cat004STCA alertStatus="OUT_REAL" trackNum2="2"/>
+			</Cat004>
+		</Alerts>
+	</TestResult>
+
+	<TrackUpdates time="12">
+		<TrackUpdate trackNumber="1" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="29.5" cartSpeedX="100" cartSpeedY="20" identStr="1" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH01" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+		<TrackUpdate trackNumber="2" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="27.5" cartSpeedX="105" cartSpeedY="15" identStr="2" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH02" ifpsFlightId="2" airportArr="WSSS" flightCatFr1Fr2="0" runway="02R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="13000" resultDescription="A STCA conflict is raised with suppressed status because all conditions are met. Heading gap is now ~11 degrees, within MAX_DELTA_HEADING."
+				nextActionComment="Aircraft velocities are modified at time 16 so that heading gap exceeds threshold again.
+				Tracks are positioned in order to generate a STCA conflict."
+				nextActionDescription="The 2 tracks should generate a STCA conflict and heading gap exceeds MAX_DELTA_HEADING. This configuration should allow SKYRADAR to generate a STCA conflict without suppressed status.">
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="true" >
+			<Cdc>
+				<CdcSTCA trackNum2="2" conflictStatus="REAL" inhibReason="NOZ"/>
+			</Cdc>
+		</Alerts>
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="true">
+			<Cat004>
+				<Cat004STCA alertStatus="OUT_REAL" trackNum2="2"/>
+			</Cat004>
+		</Alerts>
+	</TestResult>
+
+	<TrackUpdates time="16">
+		<TrackUpdate trackNumber="1" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="29.5" cartSpeedX="30" cartSpeedY="105" identStr="1" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH01" ifpsFlightId="1" airportArr="WSSS" flightCatFr1Fr2="0" runway="02L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+		<TrackUpdate trackNumber="2" measFlightLevel="2000" measFlightLevelAge="0"  posX="29.5" posY="27.5" cartSpeedX="45" cartSpeedY="100" identStr="2" baroAltitude="500" baroAltitudeQNHCor="0" rocRodRate="-25">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH02" ifpsFlightId="2" airportArr="WSSS" flightCatFr1Fr2="0" runway="02R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="18000" resultDescription="A STCA conflict is raised without suppressed status because heading gap exceeds MAX_DELTA_HEADING for both tracks (track 1: ~74° off, track 2: ~66° off runway axis)." >
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cdc>
+				<CdcSTCA trackNum2="2" conflictStatus="REAL"/>
+			</Cdc>
+		</Alerts>
+		<Alerts alertType="CONFLICT" trackNum="1" isSuppressed="false">
+			<Cat004>
+				<Cat004STCA alertStatus="OUT_REAL" trackNum2="2"/>
+			</Cat004>
+		</Alerts>
+	</TestResult>
+</UpdateRoot>

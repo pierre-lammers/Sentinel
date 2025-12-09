@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlightPhasesConfiguration xmlns="N_DATA_MODEL_HLFT">
+	<!-- Flight Phase Definitions for DMAN Departure Sequence Monitoring -->
+
+	<FlightPhases>
+		<!-- Ground departure phases (DMAN applicable) -->
+		<Phase code="DEPARTURE_GROUND"
+			description="Aircraft on ground at gate/parking position, preparing for departure"
+			dmanApplicable="true"
+			category="GROUND"/>
+
+		<Phase code="DEPARTURE_TAXI"
+			description="Aircraft taxiing to departure runway"
+			dmanApplicable="true"
+			category="GROUND"/>
+
+		<!-- Airborne phases (DMAN not applicable) -->
+		<Phase code="AIRBORNE"
+			description="Aircraft has taken off and is climbing"
+			dmanApplicable="false"
+			category="AIRBORNE"/>
+
+		<Phase code="DEPARTURE"
+			description="Aircraft in initial departure climb phase"
+			dmanApplicable="false"
+			category="AIRBORNE"/>
+
+		<Phase code="EN_ROUTE"
+			description="Aircraft in cruise flight"
+			dmanApplicable="false"
+			category="AIRBORNE"/>
+
+		<Phase code="APPROACH"
+			description="Aircraft on approach to landing"
+			dmanApplicable="false"
+			category="AIRBORNE"/>
+
+		<Phase code="ARRIVAL_TAXI"
+			description="Aircraft taxiing to gate after landing"
+			dmanApplicable="false"
+			category="GROUND"/>
+
+		<Phase code="ARRIVAL_GROUND"
+			description="Aircraft at gate after arrival"
+			dmanApplicable="false"
+			category="GROUND"/>
+	</FlightPhases>
+
+	<PhaseTransitions>
+		<!-- Typical departure flow -->
+		<Transition from="DEPARTURE_GROUND" to="DEPARTURE_TAXI" trigger="Pushback/taxi clearance"/>
+		<Transition from="DEPARTURE_TAXI" to="AIRBORNE" trigger="Takeoff"/>
+		<Transition from="AIRBORNE" to="DEPARTURE" trigger="Positive rate of climb"/>
+		<Transition from="DEPARTURE" to="EN_ROUTE" trigger="Cruise altitude"/>
+	</PhaseTransitions>
+</FlightPhasesConfiguration>

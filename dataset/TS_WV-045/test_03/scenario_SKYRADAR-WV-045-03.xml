@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ScenarioDefinition scenarioId="scenario_SKYRADAR-WV-045-03"
+                    scenarioDescription="Validates that wake vortex separation alerts are only generated when the leading aircraft wake category is HEAVY or SUPER and the following aircraft is at least two categories lower per ICAO RECAT standards. Tests condition C3: Aircraft category differential requirements.">
+
+    <!-- Test Objective: Verify wake vortex alert based on aircraft category pairing
+
+         Test Strategy:
+         - Setup: Two aircraft on same runway approach, initially same category
+         - Baseline (t=5s): MEDIUM→MEDIUM (no differential) → No alert expected
+         - Transition (t=10s): Leader identified as SUPER category
+         - Verification (t=15s): SUPER→MEDIUM (2 categories) → Alert expected
+         - Alternative (t=20s): Leader identified as HEAVY
+         - Final Check (t=25s): HEAVY→MEDIUM (1 category) → No alert expected
+
+         Category Differentials (ICAO RECAT):
+         - SUPER → MEDIUM: 2 categories (triggers alert ✅)
+         - SUPER → LIGHT: 3 categories (triggers alert ✅)
+         - HEAVY → LIGHT: 2 categories (triggers alert ✅)
+         - HEAVY → MEDIUM: 1 category (NO alert ❌)
+         - MEDIUM → LIGHT: 1 category (NO alert ❌)
+         - Same category: 0 categories (NO alert ❌)
+
+         Conditions Status:
+         C1: 🟡 Implicitly satisfied (system OPERATIONAL)
+         C2: 🟡 Implicitly satisfied (both APPROACH, same runway 09R)
+         C3: ✅ EXPLICITLY TESTED (category pairing varied: MEDIUM→MEDIUM, SUPER→MEDIUM, HEAVY→MEDIUM)
+         C4: 🟡 Implicitly satisfied (separation 3200m < dynamic minimum)
+         C5: 🟡 Implicitly satisfied (both qualityIndicator HIGH)
+         C6: 🟡 Implicitly satisfied (distance-based mode, separation < 5556m)
+         C7: 🟡 Implicitly satisfied (override false, no emergency codes)
+    -->
+
+    <!-- SETUP: Define two aircraft flight plans -->
+    <FlightPlanUpdate time="0">
+        <!-- Leader: Initially identified as MEDIUM (will change to test categories) -->
+        <FlightPlan trackNum="301" callsign="KLM642" aircraftType="B738"
+                    departureAirport="LFPG" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="MEDIUM"
+                    arrivalRunway="09R"/>
+
+        <!-- Follower: MEDIUM aircraft (A320) -->
+        <FlightPlan trackNum="302" callsign="EZY8201" aircraftType="A320"
+                    departureAirport="EGKK" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="MEDIUM"
+                    arrivalRunway="09R"/>
+    </FlightPlanUpdate>
+
+    <!-- SETUP: Initialize track identities -->
+    <IdentUpdate time="1000">
+        <Ident trackNum="301" callsign="KLM642" squawkCode="3621"/>
+        <Ident trackNum="302" callsign="EZY8201" squawkCode="3622"/>
+    </IdentUpdate>
+
+    <!-- CONFIG: System parameters and weather conditions -->
+    <SystemConfigUpdate time="2000">
+        <!-- Wake vortex system OPERATIONAL -->
+        <WakeVortexSystemStatus status="OPERATIONAL"/>
+
+        <!-- Weather conditions: Light crosswind (longer vortex persistence) -->
+        <WeatherData crosswind="4" temperature="18" humidity="75"/>
+
+        <!-- Distance-based separation mode -->
+        <SystemFlag name="WV_TIME_BASED_MODE" value="false"/>
+        <SystemFlag name="WV_EMERGENCY_OVERRIDE" value="false"/>
+
+        <!-- System parameters -->
+        <Parameter name="WV_MIN_DISTANCE_SEPARATION" value="5556"/>
+        <Parameter name="WV_PARALLEL_RWY_DISTANCE" value="760"/>
+    </SystemConfigUpdate>
+
+    <!-- BASELINE: Both aircraft MEDIUM category (no significant differential) -->
+    <TrackUpdates time="5000">
+        <!-- Leader: MEDIUM category (B738), 5 NM out -->
+        <TrackUpdate trackNum="301" latitude="52.3105" longitude="4.6845"
+                     altitude="1800" heading="090" groundSpeed="155"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="MEDIUM"/>
+
+        <!-- Follower: MEDIUM category (A320), 3.2 NM out (3200m behind) -->
+        <TrackUpdate trackNum="302" latitude="52.3105" longitude="4.7132"
+                     altitude="1500" heading="090" groundSpeed="145"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="MEDIUM"/>
+    </TrackUpdates>
+
+    <!-- TEST 1: MEDIUM→MEDIUM (same category) → No alert -->
+    <TestResult resultTimeInMilliSec="5000"
+                resultDescription="Baseline: Both aircraft are MEDIUM wake category (MEDIUM→MEDIUM pairing). Alert should NOT be generated because there is no significant category differential (0 categories difference, requirement is at least 2 categories).">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="302" alertGenerated="false"/>
+    </TestResult>
+
+    <!-- TRANSITION: Leader aircraft re-identified as SUPER category -->
+    <SystemStatusUpdate time="10000">
+        <FlightPlanCorrection trackNum="301" aircraftType="A388"
+                              wakeTurbulenceCategory="SUPER"
+                              reason="Aircraft type correction: A380-800"/>
+    </SystemStatusUpdate>
+
+    <!-- VERIFICATION: Leader now SUPER, Follower still MEDIUM (2 categories difference) -->
+    <TrackUpdates time="15000">
+        <!-- Leader: SUPER category (A388), 3 NM out -->
+        <TrackUpdate trackNum="301" latitude="52.3105" longitude="4.7234"
+                     altitude="1100" heading="090" groundSpeed="150"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="SUPER"/>
+
+        <!-- Follower: Still MEDIUM category, 1.5 NM out (3200m behind) -->
+        <TrackUpdate trackNum="302" latitude="52.3105" longitude="4.7521"
+                     altitude="800" heading="090" groundSpeed="140"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="MEDIUM"/>
+    </TrackUpdates>
+
+    <!-- TEST 2: SUPER→MEDIUM (2 categories) → Alert SHOULD be generated -->
+    <TestResult resultTimeInMilliSec="15000"
+                resultDescription="Condition triggered: Leader is SUPER category, follower is MEDIUM (2 categories lower per ICAO RECAT). Alert SHOULD be generated for insufficient separation (3200m) between SUPER leader and MEDIUM follower.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="302" alertGenerated="true"
+                leadTrack="301" separation="3200" separationUnit="meters"
+                alertSeverity="HIGH" alertMessage="Wake vortex separation infringement: SUPER to MEDIUM"
+                leaderCategory="SUPER" followerCategory="MEDIUM" categoryDifferential="2"/>
+    </TestResult>
+
+    <!-- ALTERNATIVE TRANSITION: Leader changed to HEAVY category -->
+    <SystemStatusUpdate time="20000">
+        <FlightPlanCorrection trackNum="301" aircraftType="B77W"
+                              wakeTurbulenceCategory="HEAVY"
+                              reason="Aircraft type correction: Boeing 777-300ER"/>
+    </SystemStatusUpdate>
+
+    <!-- FINAL CHECK: Leader HEAVY, Follower MEDIUM (only 1 category difference) -->
+    <TrackUpdates time="25000">
+        <!-- Leader: HEAVY category (B77W), 1 NM out -->
+        <TrackUpdate trackNum="301" latitude="52.3105" longitude="4.7568"
+                     altitude="500" heading="090" groundSpeed="145"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="HEAVY"/>
+
+        <!-- Follower: Still MEDIUM, 3200m behind (insufficient but only 1 category) -->
+        <TrackUpdate trackNum="302" latitude="52.3105" longitude="4.7855"
+                     altitude="400" heading="090" groundSpeed="135"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"
+                     wakeTurbulenceCategory="MEDIUM"/>
+    </TrackUpdates>
+
+    <!-- TEST 3: HEAVY→MEDIUM (1 category) → No alert (insufficient differential) -->
+    <TestResult resultTimeInMilliSec="25000"
+                resultDescription="Recovery: Leader is HEAVY category, follower is MEDIUM (only 1 category lower). Alert should NOT be generated because category differential is insufficient (requirement is at least 2 categories lower).">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="302" alertGenerated="false"/>
+    </TestResult>
+
+</ScenarioDefinition>

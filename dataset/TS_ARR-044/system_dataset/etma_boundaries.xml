@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ETMABoundaries>
+    <!-- Extended Terminal Maneuvering Area (E-TMA) Boundaries -->
+
+    <!-- E-TMA Definition for EHAM (Amsterdam Schiphol) -->
+    <ETMAZone airport="EHAM" name="Amsterdam E-TMA">
+        <Description>Extended Terminal Maneuvering Area for Amsterdam Schiphol Airport</Description>
+
+        <!-- Rectangular boundary definition (simplified) -->
+        <BoundaryRectangle>
+            <MinX>0</MinX>
+            <MaxX>100</MaxX>
+            <MinY>0</MinY>
+            <MaxY>100</MaxY>
+            <MinAltitude>0</MinAltitude>
+            <MaxAltitude>24500</MaxAltitude>
+            <AltitudeUnit>feet</AltitudeUnit>
+        </BoundaryRectangle>
+
+        <!-- Active runways for AMAN processing -->
+        <ActiveRunways>
+            <Runway id="25R"/>
+            <Runway id="25L"/>
+        </ActiveRunways>
+
+        <!-- E-TMA operational parameters -->
+        <Parameters>
+            <AMANHorizon value="200" unit="NM" description="AMAN planning horizon"/>
+            <FreezingHorizon value="40" unit="NM" description="Point where sequence is frozen"/>
+            <SequencingStartPoint value="100" unit="NM" description="Point where sequencing begins"/>
+        </Parameters>
+    </ETMAZone>
+
+    <!-- E-TMA Zone 2 (outside main boundary for testing) -->
+    <ETMAZone airport="EDDL" name="Düsseldorf E-TMA">
+        <Description>Extended Terminal Maneuvering Area for Düsseldorf Airport</Description>
+        <BoundaryRectangle>
+            <MinX>150</MinX>
+            <MaxX>250</MaxX>
+            <MinY>150</MinY>
+            <MaxY>250</MaxY>
+            <MinAltitude>0</MinAltitude>
+            <MaxAltitude>24500</MaxAltitude>
+            <AltitudeUnit>feet</AltitudeUnit>
+        </BoundaryRectangle>
+    </ETMAZone>
+
+</ETMABoundaries>

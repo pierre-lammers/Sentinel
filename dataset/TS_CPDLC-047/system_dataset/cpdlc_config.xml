@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CpdlcSystemConfiguration>
+	<!-- CPDLC Response Timeout Thresholds -->
+	<TimeoutParameters>
+		<Parameter name="CPDLC_RESPONSE_TIMEOUT_CLEARANCE" value="60000" unit="milliseconds" description="Response timeout for CLEARANCE messages (60 seconds)"/>
+		<Parameter name="CPDLC_RESPONSE_TIMEOUT_INSTRUCTION" value="30000" unit="milliseconds" description="Response timeout for time-critical INSTRUCTION messages (30 seconds)"/>
+		<Parameter name="CPDLC_RESPONSE_TIMEOUT_INFORMATION" value="120000" unit="milliseconds" description="Response timeout for INFORMATION messages (120 seconds)"/>
+	</TimeoutParameters>
+
+	<!-- Message Criticality Levels -->
+	<CriticalityLevels>
+		<Level name="SAFETY_CRITICAL" requiresAcknowledgment="true" priority="1" description="Immediate safety-critical instructions requiring mandatory acknowledgment"/>
+		<Level name="HIGH" requiresAcknowledgment="true" priority="2" description="High priority clearances and instructions requiring acknowledgment"/>
+		<Level name="MEDIUM" requiresAcknowledgment="false" priority="3" description="Standard communications with optional acknowledgment"/>
+		<Level name="LOW" requiresAcknowledgment="false" priority="4" description="Informational messages not requiring acknowledgment"/>
+	</CriticalityLevels>
+
+	<!-- Valid Message Types -->
+	<MessageTypes>
+		<MessageType name="CLEARANCE" description="ATC clearances requiring acknowledgment"/>
+		<MessageType name="INSTRUCTION" description="ATC instructions requiring acknowledgment"/>
+		<MessageType name="INFORMATION" description="Informational messages"/>
+		<MessageType name="REQUEST" description="ATC requests to flight crew"/>
+		<MessageType name="NOTIFICATION" description="System notifications"/>
+	</MessageTypes>
+
+	<!-- Valid Response Types -->
+	<ResponseTypes>
+		<ResponseType name="WILCO" description="Will comply - affirmative acknowledgment"/>
+		<ResponseType name="UNABLE" description="Unable to comply - negative acknowledgment"/>
+		<ResponseType name="STANDBY" description="Standby - request more time"/>
+		<ResponseType name="ROGER" description="Message received and understood"/>
+	</ResponseTypes>
+
+	<!-- Connection Status Values -->
+	<ConnectionStatus>
+		<Status name="DISCONNECTED" description="No CPDLC connection established"/>
+		<Status name="CONNECTING" description="CPDLC logon in progress"/>
+		<Status name="CONNECTED" description="CPDLC connection active"/>
+		<Status name="FAILED" description="CPDLC connection failed"/>
+	</ConnectionStatus>
+
+	<!-- Data Authority Values -->
+	<DataAuthority>
+		<Authority name="NONE" description="No data authority"/>
+		<Authority name="TRANSFER" description="Data authority transfer in progress"/>
+		<Authority name="CURRENT" description="Current data authority - controller has control"/>
+		<Authority name="EXPIRED" description="Data authority expired - handoff completed"/>
+	</DataAuthority>
+
+	<!-- System Status Values -->
+	<SystemStatus>
+		<Status name="STANDBY" alertingEnabled="false" description="System in standby mode - no alerting"/>
+		<Status name="OPERATIONAL" alertingEnabled="true" description="System operational - full alerting capability"/>
+		<Status name="DEGRADED" alertingEnabled="false" description="System degraded - limited functionality"/>
+		<Status name="FAILED" alertingEnabled="false" description="System failed - no functionality"/>
+	</SystemStatus>
+
+	<!-- Voice Communication Frequencies -->
+	<VoiceFrequencies>
+		<Frequency sector="APPROACH" frequency="121.5" description="Approach control"/>
+		<Frequency sector="CENTER" frequency="131.2" description="Area control center"/>
+		<Frequency sector="DEPARTURE" frequency="119.25" description="Departure control"/>
+		<Frequency sector="TOWER" frequency="118.7" description="Tower control"/>
+	</VoiceFrequencies>
+</CpdlcSystemConfiguration>

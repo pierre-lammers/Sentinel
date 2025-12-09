@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ScenarioDefinition scenarioId="scenario_SKYRADAR-WV-045-01"
+                    scenarioDescription="Validates that wake vortex separation alerts are only generated when the wake vortex monitoring system status is OPERATIONAL. Tests condition C1: System status must equal OPERATIONAL.">
+
+    <!-- Test Objective: Verify wake vortex alert generation based on system status
+
+         Test Strategy:
+         - Setup: Two aircraft (SUPER leading, LIGHT following) on same runway approach
+         - Baseline (t=5s): System status AVAILABLE → No alert expected
+         - Transition (t=10s): Change system status to OPERATIONAL
+         - Verification (t=15s): System status OPERATIONAL → Alert expected
+         - Recovery (t=20s): Change system status to DEGRADED
+         - Final Check (t=25s): System status DEGRADED → No alert expected
+
+         Conditions Status:
+         C1: ✅ EXPLICITLY TESTED (system status varied)
+         C2: 🟡 Implicitly satisfied (both APPROACH, same runway 09R)
+         C3: 🟡 Implicitly satisfied (SUPER→LIGHT, 2 categories)
+         C4: 🟡 Implicitly satisfied (separation 2200m < dynamic minimum)
+         C5: 🟡 Implicitly satisfied (both qualityIndicator HIGH)
+         C6: 🟡 Implicitly satisfied (distance-based mode, separation < 5556m)
+         C7: 🟡 Implicitly satisfied (override false, no emergency codes)
+    -->
+
+    <!-- SETUP: Define two aircraft flight plans -->
+    <FlightPlanUpdate time="0">
+        <!-- Leader: Super heavy aircraft (A380) -->
+        <FlightPlan trackNum="101" callsign="UAE201" aircraftType="A388"
+                    departureAirport="OMDB" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="SUPER"
+                    arrivalRunway="09R"/>
+
+        <!-- Follower: Light aircraft (Cessna Citation) -->
+        <FlightPlan trackNum="102" callsign="N550CC" aircraftType="C550"
+                    departureAirport="EBBR" arrivalAirport="EHAM"
+                    flightRules="IFR" wakeTurbulenceCategory="LIGHT"
+                    arrivalRunway="09R"/>
+    </FlightPlanUpdate>
+
+    <!-- SETUP: Initialize track identities -->
+    <IdentUpdate time="1000">
+        <Ident trackNum="101" callsign="UAE201" squawkCode="2541"/>
+        <Ident trackNum="102" callsign="N550CC" squawkCode="2542"/>
+    </IdentUpdate>
+
+    <!-- CONFIG: System parameters and weather conditions -->
+    <SystemConfigUpdate time="2000">
+        <!-- Wake vortex system initially AVAILABLE (not operational) -->
+        <WakeVortexSystemStatus status="AVAILABLE"/>
+
+        <!-- Weather conditions: Light crosswind (slow vortex dissipation) -->
+        <WeatherData crosswind="5" temperature="15" humidity="70"/>
+
+        <!-- Distance-based separation mode -->
+        <SystemFlag name="WV_TIME_BASED_MODE" value="false"/>
+        <SystemFlag name="WV_EMERGENCY_OVERRIDE" value="false"/>
+
+        <!-- System parameters -->
+        <Parameter name="WV_MIN_DISTANCE_SEPARATION" value="5556"/>
+        <Parameter name="WV_PARALLEL_RWY_DISTANCE" value="760"/>
+    </SystemConfigUpdate>
+
+    <!-- BASELINE: Both aircraft on approach, insufficient separation, system NOT operational -->
+    <TrackUpdates time="5000">
+        <!-- Leader: 4 NM from threshold, 1500ft altitude -->
+        <TrackUpdate trackNum="101" latitude="52.3105" longitude="4.7001"
+                     altitude="1500" heading="090" groundSpeed="140"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+
+        <!-- Follower: 2.8 NM from threshold (2200m behind leader) -->
+        <TrackUpdate trackNum="102" latitude="52.3105" longitude="4.7120"
+                     altitude="1200" heading="090" groundSpeed="120"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+    </TrackUpdates>
+
+    <!-- TEST 1: System AVAILABLE → No alert should be generated -->
+    <TestResult resultTimeInMilliSec="5000"
+                resultDescription="Baseline: Wake vortex system status is AVAILABLE (not OPERATIONAL). Alert should NOT be generated despite insufficient separation between SUPER and LIGHT aircraft.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="102" alertGenerated="false"/>
+    </TestResult>
+
+    <!-- TRANSITION: Change system status to OPERATIONAL -->
+    <SystemStatusUpdate time="10000">
+        <WakeVortexSystemStatus status="OPERATIONAL"/>
+    </SystemStatusUpdate>
+
+    <!-- VERIFICATION: Same aircraft positions, system now OPERATIONAL -->
+    <TrackUpdates time="15000">
+        <!-- Leader: 2.5 NM from threshold -->
+        <TrackUpdate trackNum="101" latitude="52.3105" longitude="4.7334"
+                     altitude="900" heading="090" groundSpeed="140"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+
+        <!-- Follower: Still 2200m behind leader, insufficient separation -->
+        <TrackUpdate trackNum="102" latitude="52.3105" longitude="4.7453"
+                     altitude="700" heading="090" groundSpeed="120"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+    </TrackUpdates>
+
+    <!-- TEST 2: System OPERATIONAL → Alert SHOULD be generated -->
+    <TestResult resultTimeInMilliSec="15000"
+                resultDescription="Condition triggered: Wake vortex system status is now OPERATIONAL. Alert SHOULD be generated for insufficient separation (2200m) between SUPER leader and LIGHT follower.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="102" alertGenerated="true"
+                leadTrack="101" separation="2200" separationUnit="meters"
+                alertSeverity="HIGH" alertMessage="Wake vortex separation infringement: SUPER to LIGHT"/>
+    </TestResult>
+
+    <!-- RECOVERY: Change system status to DEGRADED -->
+    <SystemStatusUpdate time="20000">
+        <WakeVortexSystemStatus status="DEGRADED"/>
+    </SystemStatusUpdate>
+
+    <!-- FINAL CHECK: Same conditions but system DEGRADED -->
+    <TrackUpdates time="25000">
+        <!-- Leader: 1 NM from threshold -->
+        <TrackUpdate trackNum="101" latitude="52.3105" longitude="4.7568"
+                     altitude="500" heading="090" groundSpeed="140"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+
+        <!-- Follower: Still 2200m behind, still insufficient -->
+        <TrackUpdate trackNum="102" latitude="52.3105" longitude="4.7687"
+                     altitude="400" heading="090" groundSpeed="120"
+                     flightPhase="APPROACH" qualityIndicator="HIGH"/>
+    </TrackUpdates>
+
+    <!-- TEST 3: System DEGRADED → No alert should be generated -->
+    <TestResult resultTimeInMilliSec="25000"
+                resultDescription="Recovery: Wake vortex system status changed to DEGRADED (not OPERATIONAL). Alert should NOT be generated despite continued insufficient separation.">
+        <Alerts alertType="WAKE_VORTEX_SEPARATION" trackNum="102" alertGenerated="false"/>
+    </TestResult>
+
+</ScenarioDefinition>

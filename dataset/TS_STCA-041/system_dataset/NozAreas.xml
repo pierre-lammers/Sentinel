@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nozAreasRoot xmlns="N_DATA_MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="N_DATA_MODEL NozAreasDM.xsd">
+  <nozArea airportID="WSSS" name="02L" heading="90" nameRunway="02L">
+    <upperAltitude>2000</upperAltitude>
+    <polygonPoint>
+      <x>29</x>
+      <y>29</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>29</x>
+      <y>30</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>31</x>
+      <y>30</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>31</x>
+      <y>29</y>
+    </polygonPoint>
+  </nozArea>
+  <nozArea airportID="WSSS" name="02R" heading="90" nameRunway="02R">
+    <upperAltitude>2000</upperAltitude>
+    <polygonPoint>
+      <x>29</x>
+      <y>27</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>29</x>
+      <y>28</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>31</x>
+      <y>28</y>
+    </polygonPoint>
+    <polygonPoint>
+      <x>31</x>
+      <y>27</y>
+    </polygonPoint>
+  </nozArea>
+</nozAreasRoot>

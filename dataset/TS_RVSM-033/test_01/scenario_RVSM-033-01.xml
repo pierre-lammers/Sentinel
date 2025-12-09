@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_RVSM-033-01"
+			testTitle="Generation of RVSM Non-Approval alerts (flight level range validation)"
+			testObjective="This test checks that SKYRADAR generates RVSM Non-Approval alerts when track flight level is within RVSM airspace range.&#xa;
+			Conditions for RVSM Non-Approval alert generation are:&#xa;
+1) The RVSM monitoring system status is equal to OPERATIONAL. &#xa;
+2) The track flight level is within RVSM airspace range (between RVSM_MIN_FL=290 and RVSM_MAX_FL=410). &#xa;
+3) The track RVSM approval status indicator is set to NOT_APPROVED or UNKNOWN. &#xa;
+4) The track altitude source quality indicator is equal to HIGH or MEDIUM. &#xa;
+5) The track is located within an RVSM designated airspace zone where monitoring is active. &#xa;
+6) The track flight plan indicates IFR operation. &#xa;
+7) The flag RVSM_EMERGENCY_EXCEPTION is set to false or the track squawk code is NOT emergency (7500/7600/7700).&#xa;
+- 1st step: track FL is BELOW RVSM range (FL280 &lt; FL290), no RVSM alert should be generated.&#xa;
+- 2nd step: track FL is WITHIN RVSM range (FL350 between FL290-FL410), RVSM alert should be generated.&#xa;
+- 3rd step: track FL is ABOVE RVSM range (FL420 &gt; FL410), no RVSM alert should be generated."
+			requirement1="SKYRADAR-RVSM-033" requirementCMATS1="SKYRADAR-RVSM-033"
+			historyDate1="18/11/2025"
+			historyEcrId1="CMATS_ISD95"
+			historyVersion1="5.0"
+			actionComment="Track is located in RVSM_ZONE_ALPHA with FL range FL290-FL410. RVSM monitoring system is set to OPERATIONAL."
+			actionDescription="Track is IFR with RVSM approval status NOT_APPROVED, but flight level is initially below RVSM range. All conditions for RVSM Non-Approval alert generation are fulfilled except flight level range. As a result, no RVSM alert should be generated.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="UAE242" cfl="280" cflUnity="F" arrivalRwy="16L" arrivalAirport="OMDB" isControlled="true" flightRules="I"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="UAE242" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<RvsmSystemUpdate time="3">
+		<RvsmStatus status="OPERATIONAL" emergencyException="false" minFlightLevel="290" maxFlightLevel="410"/>
+	</RvsmSystemUpdate>
+
+	<TrackUpdates time="5">
+		<TrackUpdate trackNumber="1" measFlightLevel="280" measFlightLevelAge="0" posX="15" posY="30" cartSpeedX="200" cartSpeedY="100" identStr="1" baroAltitude="28000" baroAltitudeQNHCor="0" rocRodRate="1200" altitudeQuality="HIGH" rvsmApprovalStatus="NOT_APPROVED" flightPhase="CRUISE">
+			<Mode3A value="2341"/>
+			<FlightPlan callsign="UAE242" ifpsFlightId="1" airportArr="OMDB" flightCatFr1Fr2="0" runway="16L" flightRules="I"/>
+			<Ident sac="118" sic="225"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="7000" resultDescription="No RVSM alert is generated because flight level (FL280) is below RVSM range (FL290-FL410)."
+				nextActionComment="Track climbs into RVSM airspace at time 10. Flight level becomes FL350 which is within FL290-FL410 range."
+				nextActionDescription="Track flight level enters RVSM range. This should trigger a RVSM Non-Approval alert.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<TrackUpdates time="10">
+		<TrackUpdate trackNumber="1" measFlightLevel="350" measFlightLevelAge="0" posX="20" posY="35" cartSpeedX="200" cartSpeedY="100" identStr="1" baroAltitude="35000" baroAltitudeQNHCor="0" rocRodRate="1100" altitudeQuality="HIGH" rvsmApprovalStatus="NOT_APPROVED" flightPhase="CRUISE">
+			<Mode3A value="2341"/>
+			<FlightPlan callsign="UAE242" ifpsFlightId="1" airportArr="OMDB" flightCatFr1Fr2="0" runway="16L" flightRules="I"/>
+			<Ident sac="118" sic="225"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="12000" resultDescription="RVSM alert is generated because flight level (FL350) is within RVSM range (FL290-FL410) and aircraft is NOT_APPROVED."
+				nextActionComment="Track climbs above RVSM airspace at time 15. Flight level becomes FL420 which is above FL410."
+				nextActionDescription="Track flight level exits RVSM range. RVSM alert should be cleared.">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="true">
+			<RvsmAlert severity="WARNING" approvalStatus="NOT_APPROVED" currentFL="350" rvsmMinFL="290" rvsmMaxFL="410" zone="RVSM_ZONE_ALPHA"/>
+		</Alerts>
+	</TestResult>
+
+	<TrackUpdates time="15">
+		<TrackUpdate trackNumber="1" measFlightLevel="420" measFlightLevelAge="0" posX="25" posY="40" cartSpeedX="200" cartSpeedY="100" identStr="1" baroAltitude="42000" baroAltitudeQNHCor="0" rocRodRate="1000" altitudeQuality="HIGH" rvsmApprovalStatus="NOT_APPROVED" flightPhase="CRUISE">
+			<Mode3A value="2341"/>
+			<FlightPlan callsign="UAE242" ifpsFlightId="1" airportArr="OMDB" flightCatFr1Fr2="0" runway="16L" flightRules="I"/>
+			<Ident sac="118" sic="225"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="17000" resultDescription="No RVSM alert is generated because flight level (FL420) is above RVSM range (FL290-FL410).">
+		<Alerts alertType="RVSM_NON_APPROVAL" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+</UpdateRoot>

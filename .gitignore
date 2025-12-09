@@ -164,4 +164,3 @@ cython_debug/
 
 # Generated data directories
 rag_srs_chroma_db/
-dataset/

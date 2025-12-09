@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AMANConfiguration>
+    <!-- Arrival Manager System Configuration -->
+
+    <!-- CSP: AMAN_MIN_DELAY_THRESHOLD - Minimum delay to trigger sequence adjustment -->
+    <Parameter name="AMAN_MIN_DELAY_THRESHOLD" value="120" unit="seconds"
+               description="Minimum arrival delay threshold for automatic sequence position adjustment"/>
+
+    <!-- VSP: TBS_MIN_SEPARATION_TIME - Minimum time-based separation -->
+    <Parameter name="TBS_MIN_SEPARATION_TIME" value="90" unit="seconds"
+               description="Minimum time-based separation between aircraft in sequence"/>
+
+    <!-- AMAN System Status Values -->
+    <SystemStatusDefinitions>
+        <Status value="OPERATIONAL" description="AMAN fully operational"/>
+        <Status value="DEGRADED" description="AMAN operating with reduced functionality"/>
+        <Status value="UNAVAILABLE" description="AMAN not available"/>
+    </SystemStatusDefinitions>
+
+    <!-- Flight Phase Definitions -->
+    <FlightPhaseDefinitions>
+        <Phase value="ARRIVAL" description="Aircraft in arrival phase"/>
+        <Phase value="DEPARTURE" description="Aircraft in departure phase"/>
+        <Phase value="CRUISE" description="Aircraft in cruise phase"/>
+        <Phase value="APPROACH" description="Aircraft in final approach"/>
+    </FlightPhaseDefinitions>
+
+    <!-- Runway Configuration -->
+    <RunwayConfiguration>
+        <Runway id="25R" name="Runway 25 Right" amanSequencingDefault="true"/>
+        <Runway id="25L" name="Runway 25 Left" amanSequencingDefault="true"/>
+        <Runway id="07R" name="Runway 07 Right" amanSequencingDefault="false"/>
+        <Runway id="07L" name="Runway 07 Left" amanSequencingDefault="false"/>
+    </RunwayConfiguration>
+
+</AMANConfiguration>

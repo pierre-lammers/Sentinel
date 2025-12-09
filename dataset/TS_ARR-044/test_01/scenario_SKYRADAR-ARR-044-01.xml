@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_ARR-044-01"
+			testTitle="Time-Based Arrival Sequencing Optimization (AMAN system status)"
+			testObjective="This test verifies that SKYRADAR only adjusts arrival sequence positions when the AMAN system status is OPERATIONAL.&#xa;
+			Conditions for automatic arrival sequence adjustment are:&#xa;
+1) The AMAN (Arrival Manager) system status is equal to OPERATIONAL. &#xa;
+2) The track is in ARRIVAL flight phase with valid time-to-threshold prediction. &#xa;
+3) The track is located within the Extended Terminal Maneuvering Area (E-TMA) boundary. &#xa;
+4) The calculated arrival delay is greater than CSP: AMAN_MIN_DELAY_THRESHOLD (120 seconds). &#xa;
+5) The track has an assigned arrival runway with active AMAN sequencing enabled. &#xa;
+6) The potential sequence position change would not violate minimum time-based separation (VSP: TBS_MIN_SEPARATION_TIME = 90 seconds).&#xa;
+- 1st step: AMAN status is DEGRADED, sequence adjustment should NOT occur.&#xa;
+- 2nd step: AMAN status transitions to OPERATIONAL, sequence adjustment SHOULD occur.&#xa;
+- 3rd step: AMAN status transitions to UNAVAILABLE, sequence adjustment should NOT occur.&#xa;
+&#xa;
+CSP: AMAN_MIN_DELAY_THRESHOLD=120 seconds. VSP: TBS_MIN_SEPARATION_TIME=90 seconds.&#xa;
+All conditions except C1 are met for automatic sequence adjustment."
+			requirement1="SKYRADAR-ARR-044" requirementCMATS1="SKYRADAR-ARR-044"
+			historyDate1="15/06/2023"
+			historyDate2="12/09/2024"
+			historyDate3="20/11/2025"
+			historyEcrId1="CMATS_ISD78"
+			historyEcrId2="FRSKYRADAR-6420"
+			historyEcrId3="FRSKYRADAR-8125"
+			historyVersion1="4.0"
+			actionComment="Track KLM001 is in ARRIVAL phase within E-TMA boundary with 180-second delay. AMAN status varies to test condition C1."
+			actionDescription="Track is configured with all conditions satisfied except AMAN system status. Status transitions test whether sequence adjustment depends on OPERATIONAL status.">
+
+	<!-- Flight Plan Definition -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="KLM001" cfl="80" cflUnity="F"
+	                  arrivalRwy="25R" arrivalAirport="EHAM" isControlled="true" flightRules="I"/>
+
+	<!-- Couple flight plan to track -->
+	<IdentUpdate recNum="1" time="2000" callsign="KLM001" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- Set AMAN status to DEGRADED -->
+	<SystemStatusUpdate time="3000">
+		<AMANSystemStatus status="DEGRADED"/>
+	</SystemStatusUpdate>
+
+	<!-- Configure runway with AMAN sequencing enabled -->
+	<DatapageAMANUpdate time="4000">
+		<RunwayConfig runwayId="25R" amanSequencingEnabled="true"/>
+	</DatapageAMANUpdate>
+
+	<!-- BASELINE: Track in ARRIVAL phase with 180s delay, but AMAN is DEGRADED -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="8000" measFlightLevelAge="0"
+		             posX="50.0" posY="50.0" cartSpeedX="120" cartSpeedY="-80"
+		             identStr="1" baroAltitude="8000" baroAltitudeQNHCor="0" rocRodRate="-800">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="KLM001" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1200" timeToThresholdValid="true"
+			          arrivalDelay="180" currentSequencePosition="5" potentialSequencePosition="3"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="6000"
+	            resultDescription="Baseline: AMAN status is DEGRADED, sequence adjustment should NOT be generated."
+	            nextActionComment="AMAN system status is transitioned to OPERATIONAL at time 8000."
+	            nextActionDescription="With AMAN status OPERATIONAL and all other conditions met, sequence adjustment alert should be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- TRANSITION: Change AMAN status to OPERATIONAL -->
+	<SystemStatusUpdate time="8000">
+		<AMANSystemStatus status="OPERATIONAL"/>
+	</SystemStatusUpdate>
+
+	<!-- Update track with same conditions -->
+	<TrackUpdates time="10000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7500" measFlightLevelAge="0"
+		             posX="55.0" posY="45.0" cartSpeedX="120" cartSpeedY="-80"
+		             identStr="1" baroAltitude="7500" baroAltitudeQNHCor="0" rocRodRate="-800">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="KLM001" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1140" timeToThresholdValid="true"
+			          arrivalDelay="185" currentSequencePosition="5" potentialSequencePosition="3"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="11000"
+	            resultDescription="AMAN status is OPERATIONAL, sequence adjustment SHOULD be generated."
+	            nextActionComment="AMAN system status is transitioned to UNAVAILABLE at time 13000."
+	            nextActionDescription="With AMAN status UNAVAILABLE, sequence adjustment alert should NOT be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true">
+			<AMANAlert currentPosition="5" newPosition="3" delaySeconds="185"/>
+		</Alerts>
+	</TestResult>
+
+	<!-- TRANSITION: Change AMAN status to UNAVAILABLE -->
+	<SystemStatusUpdate time="13000">
+		<AMANSystemStatus status="UNAVAILABLE"/>
+	</SystemStatusUpdate>
+
+	<!-- Update track with same conditions -->
+	<TrackUpdates time="15000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7000" measFlightLevelAge="0"
+		             posX="60.0" posY="40.0" cartSpeedX="120" cartSpeedY="-80"
+		             identStr="1" baroAltitude="7000" baroAltitudeQNHCor="0" rocRodRate="-800">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="KLM001" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1080" timeToThresholdValid="true"
+			          arrivalDelay="190" currentSequencePosition="5" potentialSequencePosition="3"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="16000"
+	            resultDescription="AMAN status is UNAVAILABLE, sequence adjustment should NOT be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+</UpdateRoot>

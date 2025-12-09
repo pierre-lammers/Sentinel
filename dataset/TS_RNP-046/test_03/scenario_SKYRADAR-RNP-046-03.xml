@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_RNP-046-03"
+			testTitle="RNP Approach Containment Monitoring (lateral deviation threshold)"
+			testObjective="This test checks that SKYRADAR generates RNP containment violation alerts only when lateral deviation exceeds the RNP containment limit (2 × RNP value) for more than the time threshold.&#xa;
+			Conditions for RNP containment violation alert generation are:&#xa;
+1) The RNP monitoring system status is equal to OPERATIONAL. &#xa;
+2) The track is executing an RNP approach procedure with approach type RNP or RNP_AR. &#xa;
+3) The track flight plan indicates the aircraft RNP capability value is adequate for the published procedure. &#xa;
+4) The track lateral deviation from the published RNP approach path exceeds the RNP containment limit. &#xa;
+5) The track is located within the RNP procedure coverage volume (final approach segment beyond FAF). &#xa;
+6) The track GNSS integrity status is AVAILABLE with HPL less than the alert limit. &#xa;
+7) The flag RNP_VISUAL_OVERRIDE is false or the track has not reported visual conditions.&#xa;
+- 1st step: Lateral deviation is 0.4 NM (below containment limit of 0.6 NM for RNP 0.3), this should NOT generate RNP containment violation alert.&#xa;
+- 2nd step: Lateral deviation increases to 0.75 NM (exceeds containment limit) but duration is only 3 seconds (below threshold of 5 seconds), this should NOT generate alert.&#xa;
+- 3rd step: Lateral deviation remains at 0.72 NM with exceedance duration of 7 seconds (above threshold), this should generate RNP containment violation alert.&#xa;
+- 4th step: Lateral deviation reduces to 0.5 NM (below containment limit), this should NOT generate alert.&#xa;
+
+All conditions, except the 4th one (lateral deviation threshold and duration), are met to generate RNP containment violation alert. RNP_VISUAL_OVERRIDE = false. RNP value = 0.3, containment limit = 0.6 NM, time threshold = 5 seconds."
+			requirement1="SKYRADAR-RNP-046" requirementCMATS1="SKYRADAR-RNP-046"
+			historyDate1="15/09/2024"
+			historyEcrId1="FRSKYRADAR-8200"
+			historyVersion1="1.0"
+			actionComment="Aircraft AFR228 is on RNP AR 0.3 approach to runway 02C. Initial lateral deviation is within containment limit."
+			actionDescription="Aircraft AFR228 is executing RNP AR approach with lateral deviation within acceptable limits. All conditions to generate RNP containment violation alert are fulfilled except the fourth one (lateral deviation is 0.4 NM, below containment limit of 0.6 NM).&#xa;
+			As a result, no RNP containment violation alert should be generated.">
+
+	<!-- Flight Plan Setup: RNP AR 0.3 approach to runway 02C -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="AFR228" cfl="1500" cflUnity="F"
+	                  arrivalRwy="02C" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+
+	<!-- Ident Update: Associate track with flight plan -->
+	<IdentUpdate recNum="1" time="2000" callsign="AFR228" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- System Configuration: RNP monitoring system OPERATIONAL -->
+	<SystemConfigUpdate time="3000">
+		<RNPMonitoringConfig status="OPERATIONAL"/>
+		<RNPProcedureDatabase>
+			<Procedure runway="02C" approachType="RNP_AR" requiredRNP="0.3"/>
+		</RNPProcedureDatabase>
+		<SystemParameter name="RNP_VISUAL_OVERRIDE" value="false"/>
+		<SystemParameter name="RNP_DEVIATION_TIME_THRESHOLD" value="5" unit="seconds"/>
+	</SystemConfigUpdate>
+
+	<!-- Track Update: Aircraft on RNP approach with acceptable lateral deviation -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1500" measFlightLevelAge="0"
+		             posX="103.9822" posY="1.3544" cartSpeedX="-80" cartSpeedY="100"
+		             identStr="1" baroAltitude="1500" baroAltitudeQNHCor="0" rocRodRate="-320">
+			<Mode3A value="5234"/>
+			<FlightPlan callsign="AFR228" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="3" runway="02C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP_AR" approachSegment="FINAL"
+			        lateralDeviation="0.40" deviationExceededDuration="0"
+			        publishedPathDistance="5.5"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.14" satelliteCount="13" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 1: Deviation within limit - No alert expected -->
+	<TestResult resultTimeInMilliSec="5000"
+	            resultDescription="Lateral deviation is 0.40 NM (below containment limit of 0.6 NM). No RNP containment violation alert should be generated."
+	            nextActionComment="Lateral deviation increases to 0.75 NM at time 10000, exceeding containment limit.&#xa;
+	            However, exceedance duration is only 3 seconds (below threshold of 5 seconds)."
+	            nextActionDescription="Lateral deviation exceeds containment limit but duration is insufficient. Alert should NOT be generated yet.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- Track Update: Deviation exceeds limit but duration insufficient -->
+	<TrackUpdates time="10000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1400" measFlightLevelAge="0"
+		             posX="103.9860" posY="1.3600" cartSpeedX="-80" cartSpeedY="100"
+		             identStr="1" baroAltitude="1400" baroAltitudeQNHCor="0" rocRodRate="-320">
+			<Mode3A value="5234"/>
+			<FlightPlan callsign="AFR228" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="3" runway="02C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP_AR" approachSegment="FINAL"
+			        lateralDeviation="0.75" deviationExceededDuration="3"
+			        publishedPathDistance="4.1"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.15" satelliteCount="13" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 2: Deviation exceeds limit but insufficient duration - No alert expected -->
+	<TestResult resultTimeInMilliSec="10000"
+	            resultDescription="Lateral deviation is 0.75 NM (exceeds containment limit) but exceedance duration is only 3 seconds (below threshold of 5 seconds). No RNP containment violation alert should be generated."
+	            nextActionComment="Lateral deviation remains at 0.72 NM at time 15000.&#xa;
+	            Exceedance duration is now 7 seconds (above threshold of 5 seconds)."
+	            nextActionDescription="Lateral deviation exceeds containment limit with sufficient duration. Alert SHOULD be generated.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- Track Update: Deviation exceeds limit with sufficient duration -->
+	<TrackUpdates time="15000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1250" measFlightLevelAge="0"
+		             posX="103.9880" posY="1.3640" cartSpeedX="-80" cartSpeedY="100"
+		             identStr="1" baroAltitude="1250" baroAltitudeQNHCor="0" rocRodRate="-320">
+			<Mode3A value="5234"/>
+			<FlightPlan callsign="AFR228" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="3" runway="02C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP_AR" approachSegment="FINAL"
+			        lateralDeviation="0.72" deviationExceededDuration="7"
+			        publishedPathDistance="2.8"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.16" satelliteCount="13" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 3: Deviation exceeds limit with sufficient duration - Alert expected -->
+	<TestResult resultTimeInMilliSec="15000"
+	            resultDescription="Lateral deviation is 0.72 NM (exceeds containment limit of 0.6 NM) with exceedance duration of 7 seconds (above threshold of 5 seconds). RNP containment violation alert should be generated."
+	            nextActionComment="Lateral deviation reduces to 0.5 NM at time 20000.&#xa;
+	            Deviation is now below containment limit."
+	            nextActionDescription="Lateral deviation returns below containment limit. Alert should no longer be generated.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="true">
+			<RNPAlert alertReason="LATERAL_DEVIATION_EXCEEDED"
+			         lateralDeviation="0.72" containmentLimit="0.6"
+			         exceedanceDuration="7" requiredRNP="0.3"/>
+		</Alerts>
+	</TestResult>
+
+	<!-- Track Update: Deviation returns below limit -->
+	<TrackUpdates time="20000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1100" measFlightLevelAge="0"
+		             posX="103.9890" posY="1.3660" cartSpeedX="-80" cartSpeedY="100"
+		             identStr="1" baroAltitude="1100" baroAltitudeQNHCor="0" rocRodRate="-320">
+			<Mode3A value="5234"/>
+			<FlightPlan callsign="AFR228" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="3" runway="02C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP_AR" approachSegment="FINAL"
+			        lateralDeviation="0.50" deviationExceededDuration="0"
+			        publishedPathDistance="1.7"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.17" satelliteCount="13" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 4: Deviation back within limit - No alert expected -->
+	<TestResult resultTimeInMilliSec="20000"
+	            resultDescription="Lateral deviation is 0.50 NM (below containment limit of 0.6 NM). No RNP containment violation alert should be generated.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+</UpdateRoot>

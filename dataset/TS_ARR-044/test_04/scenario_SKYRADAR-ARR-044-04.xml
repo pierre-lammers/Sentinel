@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_ARR-044-04"
+			testTitle="Time-Based Arrival Sequencing Optimization (runway AMAN sequencing activation)"
+			testObjective="This test verifies that SKYRADAR only adjusts arrival sequence positions when the assigned arrival runway has active AMAN sequencing enabled.&#xa;
+			Conditions for automatic arrival sequence adjustment are:&#xa;
+1) The AMAN (Arrival Manager) system status is equal to OPERATIONAL. &#xa;
+2) The track is in ARRIVAL flight phase with valid time-to-threshold prediction. &#xa;
+3) The track is located within the Extended Terminal Maneuvering Area (E-TMA) boundary. &#xa;
+4) The calculated arrival delay is greater than CSP: AMAN_MIN_DELAY_THRESHOLD (120 seconds). &#xa;
+5) The track has an assigned arrival runway with active AMAN sequencing enabled. &#xa;
+6) The potential sequence position change would not violate minimum time-based separation (VSP: TBS_MIN_SEPARATION_TIME = 90 seconds).&#xa;
+- 1st step: Runway 25L has AMAN sequencing disabled, sequence adjustment should NOT occur.&#xa;
+- 2nd step: Runway 25L AMAN sequencing is enabled, sequence adjustment SHOULD occur.&#xa;
+- 3rd step: Runway 25L AMAN sequencing is disabled again, sequence adjustment should NOT occur.&#xa;
+&#xa;
+CSP: AMAN_MIN_DELAY_THRESHOLD=120 seconds. VSP: TBS_MIN_SEPARATION_TIME=90 seconds.&#xa;
+All conditions except C5 are met for automatic sequence adjustment."
+			requirement1="SKYRADAR-ARR-044" requirementCMATS1="SKYRADAR-ARR-044"
+			historyDate1="15/06/2023"
+			historyDate2="12/09/2024"
+			historyDate3="20/11/2025"
+			historyEcrId1="CMATS_ISD78"
+			historyEcrId2="FRSKYRADAR-6423"
+			historyEcrId3="FRSKYRADAR-8128"
+			historyVersion1="4.0"
+			actionComment="Track DLH412 is assigned runway 25L. AMAN sequencing for runway 25L transitions between enabled/disabled states to test condition C5."
+			actionDescription="Track is configured with all conditions satisfied except runway AMAN sequencing status. Sequencing activation toggles test whether sequence adjustment depends on runway AMAN being enabled.">
+
+	<!-- Flight Plan Definition -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="DLH412" cfl="80" cflUnity="F"
+	                  arrivalRwy="25L" arrivalAirport="EHAM" isControlled="true" flightRules="I"/>
+
+	<!-- Couple flight plan to track -->
+	<IdentUpdate recNum="1" time="2000" callsign="DLH412" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- Set AMAN status to OPERATIONAL -->
+	<SystemStatusUpdate time="3000">
+		<AMANSystemStatus status="OPERATIONAL"/>
+	</SystemStatusUpdate>
+
+	<!-- Configure runway 25L with AMAN sequencing DISABLED -->
+	<DatapageAMANUpdate time="4000">
+		<RunwayConfig runwayId="25L" amanSequencingEnabled="false"/>
+	</DatapageAMANUpdate>
+
+	<!-- BASELINE: Runway has AMAN sequencing disabled, should NOT generate alert -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7800" measFlightLevelAge="0"
+		             posX="48.0" posY="52.0" cartSpeedX="105" cartSpeedY="-82"
+		             identStr="1" baroAltitude="7800" baroAltitudeQNHCor="0" rocRodRate="-680">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH412" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1220" timeToThresholdValid="true"
+			          arrivalDelay="155" currentSequencePosition="8" potentialSequencePosition="6"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="6000"
+	            resultDescription="Baseline: Runway 25L AMAN sequencing is disabled, sequence adjustment should NOT be generated."
+	            nextActionComment="Runway 25L AMAN sequencing is enabled at time 8000."
+	            nextActionDescription="With runway AMAN sequencing enabled and all other conditions met, sequence adjustment alert should be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- MISSING TRANSITION: The DatapageAMANUpdate to enable sequencing is MISSING here! -->
+	<!-- This should be: -->
+	<!-- <DatapageAMANUpdate time="8000">
+		<RunwayConfig runwayId="25L" amanSequencingEnabled="true"/>
+	</DatapageAMANUpdate> -->
+
+	<!-- Update track - but runway sequencing was NEVER enabled! -->
+	<TrackUpdates time="10000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7000" measFlightLevelAge="0"
+		             posX="55.0" posY="47.0" cartSpeedX="105" cartSpeedY="-82"
+		             identStr="1" baroAltitude="7000" baroAltitudeQNHCor="0" rocRodRate="-680">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH412" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1140" timeToThresholdValid="true"
+			          arrivalDelay="160" currentSequencePosition="8" potentialSequencePosition="6"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- FALSE POSITIVE: Asserts alert generated, but runway sequencing is still DISABLED -->
+	<TestResult resultTimeInMilliSec="11000"
+	            resultDescription="Runway 25L AMAN sequencing is enabled, sequence adjustment SHOULD be generated."
+	            nextActionComment="Runway 25L AMAN sequencing is disabled at time 13000."
+	            nextActionDescription="With runway AMAN sequencing disabled, sequence adjustment alert should NOT be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true">
+			<AMANAlert currentPosition="8" newPosition="6" delaySeconds="160"/>
+		</Alerts>
+	</TestResult>
+
+	<!-- Disable runway AMAN sequencing -->
+	<DatapageAMANUpdate time="13000">
+		<RunwayConfig runwayId="25L" amanSequencingEnabled="false"/>
+	</DatapageAMANUpdate>
+
+	<!-- Update track -->
+	<TrackUpdates time="15000">
+		<TrackUpdate trackNumber="1" measFlightLevel="6200" measFlightLevelAge="0"
+		             posX="61.0" posY="42.0" cartSpeedX="105" cartSpeedY="-82"
+		             identStr="1" baroAltitude="6200" baroAltitudeQNHCor="0" rocRodRate="-680">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="DLH412" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25L"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1065" timeToThresholdValid="true"
+			          arrivalDelay="165" currentSequencePosition="8" potentialSequencePosition="6"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="16000"
+	            resultDescription="Runway 25L AMAN sequencing is disabled, sequence adjustment should NOT be generated.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+</UpdateRoot>

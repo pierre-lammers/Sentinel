@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<parallelApproachPairsRoot xmlns="N_DATA_MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="N_DATA_MODEL ParallelApproachPairsDM.xsd">
+  <parallelApproachPair  modeOnStartup="Independent" minimalDistance="0" nameNOZAreaId1="02L" nameNTZArea="ntz2" nameNOZAreaId2="02R"/>
+</parallelApproachPairsRoot>

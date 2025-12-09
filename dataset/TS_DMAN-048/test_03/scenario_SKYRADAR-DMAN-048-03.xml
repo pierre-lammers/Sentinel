@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		testId="TS_DMAN-048-03"
+		testTitle="Generation of DMAN slot violation alerts (flight phase validation)"
+		testObjective="This test verifies that SKYRADAR generates DMAN slot violation alerts only for tracks in DEPARTURE_GROUND or DEPARTURE_TAXI flight phase.&#xa;
+		Conditions for DMAN slot violation alert generation are:&#xa;
+1) The DMAN system status is equal to OPERATIONAL. &#xa;
+2) The track has an assigned Target Take-Off Time (TTOT) with departure sequence position allocated by DMAN. &#xa;
+3) The track is in DEPARTURE_GROUND or DEPARTURE_TAXI flight phase with valid ground position data. &#xa;
+4) The calculated actual take-off time prediction exceeds the assigned TTOT by more than DMAN_SLOT_TOLERANCE (+/- 5 minutes). &#xa;
+5) The departure runway assigned to the track has active DMAN sequencing enabled with current departure demand exceeding DMAN_ACTIVATION_THRESHOLD (8 departures per hour). &#xa;
+6) The track departure route or initial departure fix matches one of the DMAN managed flow constraint points defined in DMAN_REGULATED_ROUTES.&#xa;
+- 1st step: track is in DEPARTURE_GROUND phase, no DMAN alert should be generated (slot within tolerance for initial setup).&#xa;
+- 2nd step: track transitions to DEPARTURE_TAXI phase with slot violation, DMAN alert should be generated.&#xa;
+- 3rd step: track transitions to AIRBORNE phase (departed), no DMAN alert should be generated.&#xa;
+&#xa;
+TTOT = 10:45:00 UTC (epoch 38700000), DMAN_SLOT_TOLERANCE = 300 seconds. System status = OPERATIONAL."
+		requirement1="SKYRADAR-DMAN-048" requirementCMATS1="SKYRADAR-DMAN-048"
+		historyDate1="18/11/2024"
+		historyDate2="25/11/2024"
+		historyEcrId1="CMATS_ISD103"
+		historyEcrId2="FRSKYRADAR-9144"
+		historyVersion1="5.1"
+		actionComment="Track is initially in DEPARTURE_GROUND phase. DMAN system is set to OPERATIONAL."
+		actionDescription="Track transitions through different flight phases: DEPARTURE_GROUND → DEPARTURE_TAXI → AIRBORNE. Test validates that alerts are only generated during ground departure phases.">
+
+	<FlightPlanUpdate recNum="1" time="1" callsign="BAW567" cfl="370" cflUnity="F" departureRwy="27R" departureAirport="LFPG" isControlled="true" flightRules="I" departureRoute="DMAN_ROUTE_EAST"/>
+
+	<IdentUpdate recNum="1" time="2" callsign="BAW567" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<DmanSystemUpdate time="3">
+		<DmanStatus status="OPERATIONAL" slotTolerance="300"/>
+		<RunwayConfig runway="27R" dmanSequencingEnabled="true" departureRate="11"/>
+		<RegulatedRoutes>
+			<Route name="DMAN_ROUTE_NORTH" active="true"/>
+			<Route name="DMAN_ROUTE_SOUTH" active="true"/>
+			<Route name="DMAN_ROUTE_EAST" active="true"/>
+		</RegulatedRoutes>
+	</DmanSystemUpdate>
+
+	<TrackUpdates time="5">
+		<TrackUpdate trackNumber="1" posX="-600" posY="150" groundSpeed="0" identStr="1" flightPhase="DEPARTURE_GROUND" positionQuality="HIGH">
+			<Mode3A value="4521"/>
+			<FlightPlan callsign="BAW567" ifpsFlightId="1" airportDep="LFPG" runway="27R" departureRoute="DMAN_ROUTE_EAST"/>
+			<DmanData ttot="38700000" sequencePosition="7" predictedTakeoffTime="38820000"/>
+			<Ident sac="145" sic="110"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="7000" resultDescription="No DMAN slot violation alert is generated because predicted take-off time (10:47:00) is within tolerance of TTOT (10:45:00 + 5 min = 10:50:00)."
+				nextActionComment="At time 10, track enters taxi phase and encounters delay. Predicted take-off time becomes 10:53:00, exceeding TTOT + 5 min tolerance.&#xa;
+				Track transitions to DEPARTURE_TAXI phase."
+				nextActionDescription="Track is in DEPARTURE_TAXI phase with slot violation. DMAN alert should be generated.">
+		<Alerts alertType="DMAN_SLOT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<TrackUpdates time="10">
+		<TrackUpdate trackNumber="1" posX="-550" posY="170" groundSpeed="12" identStr="1" flightPhase="DEPARTURE_TAXI" positionQuality="HIGH">
+			<Mode3A value="4521"/>
+			<FlightPlan callsign="BAW567" ifpsFlightId="1" airportDep="LFPG" runway="27R" departureRoute="DMAN_ROUTE_EAST"/>
+			<DmanData ttot="38700000" sequencePosition="7" predictedTakeoffTime="39180000"/>
+			<Ident sac="145" sic="110"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="12000" resultDescription="DMAN slot violation alert is generated because track is in DEPARTURE_TAXI phase and predicted take-off time (10:53:00) exceeds TTOT tolerance (10:45:00 + 5 min = 10:50:00)."
+				nextActionComment="At time 15, track takes off and becomes airborne. Slot violation is no longer relevant.&#xa;
+				Track transitions to AIRBORNE phase."
+				nextActionDescription="Track is airborne. DMAN alert should be cleared as phase is no longer DEPARTURE_GROUND or DEPARTURE_TAXI.">
+		<Alerts alertType="DMAN_SLOT_VIOLATION" trackNum="1" alertGenerated="true">
+			<DmanAlert severity="WARNING" ttot="38700000" predictedTime="39180000" slotDeviation="480" tolerance="300" runway="27R"/>
+		</Alerts>
+	</TestResult>
+
+	<TrackUpdates time="15">
+		<TrackUpdate trackNumber="1" measFlightLevel="800" measFlightLevelAge="0" posX="-500" posY="200" cartSpeedX="150" cartSpeedY="80" identStr="1" baroAltitude="800" baroAltitudeQNHCor="0" rocRodRate="1800" altitudeQuality="HIGH" flightPhase="AIRBORNE">
+			<Mode3A value="4521"/>
+			<FlightPlan callsign="BAW567" ifpsFlightId="1" airportDep="LFPG" runway="27R" departureRoute="DMAN_ROUTE_EAST"/>
+			<Ident sac="145" sic="110"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="17000" resultDescription="No DMAN slot violation alert is generated because track is AIRBORNE (not in DEPARTURE_GROUND or DEPARTURE_TAXI phase).">
+		<Alerts alertType="DMAN_SLOT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+</UpdateRoot>

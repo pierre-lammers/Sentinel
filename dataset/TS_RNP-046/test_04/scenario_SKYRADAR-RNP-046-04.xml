@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_RNP-046-04"
+			testTitle="RNP Approach Containment Monitoring (visual override flag)"
+			testObjective="This test checks that SKYRADAR generates RNP containment violation alerts when the RNP_VISUAL_OVERRIDE flag is false or when the track has not reported visual conditions with runway in sight.&#xa;
+			Conditions for RNP containment violation alert generation are:&#xa;
+1) The RNP monitoring system status is equal to OPERATIONAL. &#xa;
+2) The track is executing an RNP approach procedure with approach type RNP or RNP_AR. &#xa;
+3) The track flight plan indicates the aircraft RNP capability value is adequate for the published procedure. &#xa;
+4) The track lateral deviation from the published RNP approach path exceeds the RNP containment limit. &#xa;
+5) The track is located within the RNP procedure coverage volume (final approach segment beyond FAF). &#xa;
+6) The track GNSS integrity status is AVAILABLE with HPL less than the alert limit. &#xa;
+7) The flag RNP_VISUAL_OVERRIDE is false or the track has not reported visual conditions.&#xa;
+- 1st step: RNP_VISUAL_OVERRIDE flag is false and track has not reported visual conditions, this should generate RNP containment violation alert.&#xa;
+- 2nd step: RNP_VISUAL_OVERRIDE flag is set to true and track reports visual conditions with runway in sight, this should NOT generate alert (visual override active).&#xa;
+- 3rd step: RNP_VISUAL_OVERRIDE flag remains true but track has not reported visual conditions, this should generate alert (OR condition: flag is true BUT track has NOT reported visual).&#xa;
+
+All conditions are met to generate RNP containment violation alert. This test validates the OR logic in condition C7."
+			requirement1="SKYRADAR-RNP-046" requirementCMATS1="SKYRADAR-RNP-046"
+			historyDate1="15/09/2024"
+			historyEcrId1="FRSKYRADAR-8200"
+			historyVersion1="1.0"
+			actionComment="Aircraft UAE212 is on RNP 0.3 approach to runway 20C with excessive lateral deviation. RNP_VISUAL_OVERRIDE flag is initially false."
+			actionDescription="Aircraft UAE212 is executing RNP approach with excessive lateral deviation. All conditions to generate RNP containment violation alert are fulfilled including condition 7 (RNP_VISUAL_OVERRIDE is false).&#xa;
+			As a result, RNP containment violation alert should be generated.">
+
+	<!-- Flight Plan Setup: RNP 0.3 approach to runway 20C -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="UAE212" cfl="1500" cflUnity="F"
+	                  arrivalRwy="20C" arrivalAirport="WSSS" isControlled="true" flightRules="I"/>
+
+	<!-- Ident Update: Associate track with flight plan -->
+	<IdentUpdate recNum="1" time="2000" callsign="UAE212" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- System Configuration: RNP monitoring system OPERATIONAL, visual override FALSE -->
+	<SystemConfigUpdate time="3000">
+		<RNPMonitoringConfig status="OPERATIONAL"/>
+		<RNPProcedureDatabase>
+			<Procedure runway="20C" approachType="RNP" requiredRNP="0.3"/>
+		</RNPProcedureDatabase>
+		<SystemParameter name="RNP_VISUAL_OVERRIDE" value="false"/>
+		<SystemParameter name="RNP_DEVIATION_TIME_THRESHOLD" value="5" unit="seconds"/>
+	</SystemConfigUpdate>
+
+	<!-- Track Update: Aircraft on RNP approach with excessive lateral deviation -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1500" measFlightLevelAge="0"
+		             posX="103.9970" posY="1.3806" cartSpeedX="80" cartSpeedY="-100"
+		             identStr="1" baroAltitude="1500" baroAltitudeQNHCor="0" rocRodRate="-330">
+			<Mode3A value="6512"/>
+			<FlightPlan callsign="UAE212" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="3" runway="20C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP" approachSegment="FINAL"
+			        lateralDeviation="0.74" deviationExceededDuration="8"
+			        publishedPathDistance="4.2"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.16" satelliteCount="12" quality="HIGH"/>
+			<VisualConditions reported="false" runwayInSight="false"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 1: Visual override false, no visual conditions - Alert expected -->
+	<TestResult resultTimeInMilliSec="5000"
+	            resultDescription="RNP_VISUAL_OVERRIDE flag is false and track has not reported visual conditions. RNP containment violation alert should be generated."
+	            nextActionComment="RNP_VISUAL_OVERRIDE flag is set to true at time 10000.&#xa;
+	            Track reports visual conditions with runway in sight."
+	            nextActionDescription="Visual override becomes active and track has visual contact with runway. Alert should be suppressed due to visual override.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="true">
+			<RNPAlert alertReason="LATERAL_DEVIATION_EXCEEDED"
+			         lateralDeviation="0.74" containmentLimit="0.6"
+			         exceedanceDuration="8" requiredRNP="0.3"/>
+		</Alerts>
+	</TestResult>
+
+	<!-- System Configuration Update: Visual override enabled -->
+	<SystemConfigUpdate time="10000">
+		<SystemParameter name="RNP_VISUAL_OVERRIDE" value="true"/>
+	</SystemConfigUpdate>
+
+	<!-- Track Update: Visual conditions reported with runway in sight -->
+	<TrackUpdates time="12000">
+		<TrackUpdate trackNumber="1" measFlightLevel="1300" measFlightLevelAge="0"
+		             posX="103.9940" posY="1.3760" cartSpeedX="80" cartSpeedY="-100"
+		             identStr="1" baroAltitude="1300" baroAltitudeQNHCor="0" rocRodRate="-330">
+			<Mode3A value="6512"/>
+			<FlightPlan callsign="UAE212" ifpsFlightId="1" airportArr="WSSS"
+			           flightCatFr1Fr2="3" runway="20C" aircraftRNPCapability="0.3"/>
+			<RNPData approachType="RNP" approachSegment="FINAL"
+			        lateralDeviation="0.70" deviationExceededDuration="14"
+			        publishedPathDistance="3.1"/>
+			<GNSSData integrityStatus="AVAILABLE" hpl="0.17" satelliteCount="12" quality="HIGH"/>
+			<VisualConditions reported="true" runwayInSight="true"/>
+			<Ident sac="118" sic="220"/>
+			<SysTrkAge ssrAge="0"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<!-- Test Result 2: Visual override true AND visual conditions reported - No alert expected -->
+	<TestResult resultTimeInMilliSec="12000"
+	            resultDescription="RNP_VISUAL_OVERRIDE flag is true AND track has reported visual conditions with runway in sight. No RNP containment violation alert should be generated (visual override suppresses alert)."
+	            nextActionComment="Track loses visual conditions at time 17000.&#xa;
+	            RNP_VISUAL_OVERRIDE flag remains true but visual conditions no longer reported."
+	            nextActionDescription="Visual override flag is true BUT track has NOT reported visual conditions. According to condition C7 OR logic, alert should be generated.">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- INTENTIONAL FLAW: Missing TrackUpdates that should change visual conditions to reported="false" -->
+	<!-- The test description claims visual conditions are lost, but XML never updates VisualConditions -->
+	<!-- This creates a false positive: test claims to validate OR logic but actually doesn't -->
+
+	<!-- Test Result 3: FALSE POSITIVE - Claims visual conditions lost but no state change in XML -->
+	<TestResult resultTimeInMilliSec="17000"
+	            resultDescription="RNP_VISUAL_OVERRIDE flag is true BUT track has not reported visual conditions. RNP containment violation alert should be generated (OR condition: flag is true OR track has not reported visual).">
+		<Alerts alertType="RNP_CONTAINMENT_VIOLATION" trackNum="1" alertGenerated="true">
+			<RNPAlert alertReason="LATERAL_DEVIATION_EXCEEDED"
+			         lateralDeviation="0.70" containmentLimit="0.6"
+			         exceedanceDuration="19" requiredRNP="0.3"/>
+		</Alerts>
+	</TestResult>
+</UpdateRoot>
