@@ -8,9 +8,11 @@ Ce module définit un graph LangGraph qui:
 
 from __future__ import annotations
 
+import json
 import os
+import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
@@ -19,6 +21,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph
 from langgraph.runtime import Runtime
+from pydantic import SecretStr
 from typing_extensions import TypedDict
 
 load_dotenv()
@@ -92,9 +95,10 @@ class State:
 
 def get_vector_store() -> Chroma:
     """Initialise et retourne le vector store Chroma."""
+    google_api_key = os.getenv("GOOGLE_API_KEY")
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/gemini-embedding-001",
-        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        google_api_key=SecretStr(google_api_key) if google_api_key else None,
     )
     return Chroma(
         collection_name="srs_db",
@@ -103,19 +107,18 @@ def get_vector_store() -> Chroma:
     )
 
 
-def get_llm(model: Optional[str] = None, temperature: float = 0.0) -> ChatOpenAI:
+def get_llm(model: str | None = None, temperature: float = 0.0) -> ChatOpenAI:
     """Crée une instance LLM via OpenRouter."""
+    api_key = os.getenv("OPENROUTER_API_KEY")
     return ChatOpenAI(
         model=model or "google/gemini-2.5-flash-lite-preview-09-2025",
         temperature=temperature,
-        api_key=os.getenv("OPENROUTER_API_KEY"),
+        api_key=SecretStr(api_key) if api_key else None,
         base_url="https://openrouter.ai/api/v1",
     )
 
 
-def get_context_value(
-    runtime: Runtime[Context], key: str, default: Any = None
-) -> Any:
+def get_context_value(runtime: Runtime[Context], key: str, default: Any = None) -> Any:
     """Récupère une valeur du context avec fallback."""
     return (runtime.context or {}).get(key, default)
 
@@ -213,10 +216,7 @@ Génère la liste complète des test cases en JSON.
         ]
 
         response = await llm.ainvoke(messages)
-        content = response.content
-
-        import json
-        import re
+        content = str(response.content)
 
         json_match = re.search(r"\[.*\]", content, re.DOTALL)
         if json_match:
@@ -277,9 +277,7 @@ present = true signifie que ce cas de test EST vérifié par le scénario XML.
 present = false signifie que ce cas de test N'EST PAS vérifié par le scénario XML.
 """
 
-        test_cases_formatted = "\n".join(
-            f"- {tc}" for tc in state.generated_test_cases
-        )
+        test_cases_formatted = "\n".join(f"- {tc}" for tc in state.generated_test_cases)
 
         user_prompt = f"""Analyse le scénario de test suivant et détermine quels test cases sont couverts.
 
@@ -304,10 +302,7 @@ Pour chaque test case, indique si le scénario le couvre (present: true/false).
         ]
 
         response = await llm.ainvoke(messages)
-        content = response.content
-
-        import json
-        import re
+        content = str(response.content)
 
         json_match = re.search(r"\[.*\]", content, re.DOTALL)
         if json_match:
@@ -319,11 +314,9 @@ Pour chaque test case, indique si le scénario le couvre (present: true/false).
                 parts = tc.split(":", 1)
                 tc_id = parts[0].strip()
                 tc_desc = parts[1].strip() if len(parts) > 1 else ""
-                test_cases_with_status.append({
-                    "id": tc_id,
-                    "description": tc_desc,
-                    "present": False
-                })
+                test_cases_with_status.append(
+                    {"id": tc_id, "description": tc_desc, "present": False}
+                )
 
         return {"test_cases_with_status": test_cases_with_status}
 
@@ -336,7 +329,7 @@ Pour chaque test case, indique si le scénario le couvre (present: true/false).
 # =============================================================================
 
 graph = (
-    StateGraph(State, context_schema=Context, input=StateInput)
+    StateGraph(State, context_schema=Context)
     .add_node("retrieve_requirement", retrieve_requirement)
     .add_node("generate_test_cases", generate_test_cases)
     .add_node("analyze_test_scenario", analyze_test_scenario)
