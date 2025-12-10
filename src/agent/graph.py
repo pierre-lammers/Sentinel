@@ -137,7 +137,7 @@ async def retrieve_requirement(
         top_k = get_context_value(runtime, "rag_top_k", 5)
 
         query = f"Requirement {state.req_id}"
-        docs = vector_store.similarity_search(query, k=top_k)
+        docs = await vector_store.asimilarity_search(query, k=top_k)
 
         if not docs:
             return {
