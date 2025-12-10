@@ -151,3 +151,4 @@ See LangGraph documentation for cloud deployment details.
 ## Code conventions
 
 When writing code, adhere to the repository’s conventions and refer to the MCP LangChain documentation.
+Ensure that the lint with ruff and mypy are correct.

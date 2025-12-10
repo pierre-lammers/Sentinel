@@ -8,11 +8,9 @@ Ce module définit un graph LangGraph qui:
 
 from __future__ import annotations
 
-import json
 import os
-import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
@@ -21,7 +19,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph
 from langgraph.runtime import Runtime
-from pydantic import SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import TypedDict
 
 load_dotenv()
@@ -38,6 +36,44 @@ class TestCase(TypedDict):
     id: str
     description: str
     present: bool  # True si le test est couvert par le scénario
+
+
+# =============================================================================
+# Structured Output Models (Pydantic)
+# =============================================================================
+
+
+class GeneratedTestCase(BaseModel):
+    """Un test case généré par le LLM."""
+
+    id: str = Field(description="Identifiant unique du test case (ex: TC-001)")
+    description: str = Field(description="Description claire et concise du test case")
+
+
+class TestCaseList(BaseModel):
+    """Liste de test cases générés pour un requirement."""
+
+    test_cases: List[GeneratedTestCase] = Field(
+        description="Liste exhaustive des test cases couvrant tous les scénarios possibles"
+    )
+
+
+class AnalyzedTestCase(BaseModel):
+    """Un test case avec son statut de couverture."""
+
+    id: str = Field(description="Identifiant du test case (ex: TC-001)")
+    description: str = Field(description="Description du test case")
+    present: bool = Field(
+        description="True si le test case est couvert par le scénario XML, False sinon"
+    )
+
+
+class TestCaseAnalysis(BaseModel):
+    """Résultat de l'analyse de couverture des test cases."""
+
+    test_cases: List[AnalyzedTestCase] = Field(
+        description="Liste des test cases avec leur statut de couverture"
+    )
 
 
 # =============================================================================
@@ -98,7 +134,7 @@ def get_vector_store() -> Chroma:
     google_api_key = os.getenv("GOOGLE_API_KEY")
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/gemini-embedding-001",
-        google_api_key=SecretStr(google_api_key) if google_api_key else None,  # type: ignore[call-arg]
+        google_api_key=SecretStr(google_api_key) if google_api_key else None,
     )
     return Chroma(
         collection_name="srs_db",
@@ -176,19 +212,15 @@ async def generate_test_cases(
         temperature = get_context_value(runtime, "temperature", 0.0)
         llm = get_llm(model, temperature)
 
+        # Utiliser structured output avec le modèle Pydantic
+        structured_llm = llm.with_structured_output(TestCaseList)
+
         system_prompt = """Tu es un expert en test logiciel et assurance qualité.
 Ta tâche est de générer une liste exhaustive de test cases pour un requirement donné.
 
 Pour chaque test case, fournis:
 - Un identifiant unique (TC-XXX)
 - Une description claire et concise
-
-Réponds UNIQUEMENT avec une liste JSON de test cases au format:
-[
-    {"id": "TC-001", "description": "Description du test"},
-    {"id": "TC-002", "description": "Description du test"},
-    ...
-]
 
 Sois exhaustif et couvre tous les scénarios possibles:
 - Cas nominaux (comportement attendu)
@@ -206,8 +238,6 @@ Sois exhaustif et couvre tous les scénarios possibles:
 
 **Contexte additionnel (RAG)**:
 {state.rag_context}
-
-Génère la liste complète des test cases en JSON.
 """
 
         messages = [
@@ -215,21 +245,11 @@ Génère la liste complète des test cases en JSON.
             HumanMessage(content=user_prompt),
         ]
 
-        response = await llm.ainvoke(messages)
-        content = str(response.content)
+        response = cast(TestCaseList, await structured_llm.ainvoke(messages))
 
-        json_match = re.search(r"\[.*\]", content, re.DOTALL)
-        if json_match:
-            test_cases_raw = json.loads(json_match.group())
-            generated_test_cases = [
-                f"{tc['id']}: {tc['description']}" for tc in test_cases_raw
-            ]
-        else:
-            generated_test_cases = [
-                line.strip()
-                for line in content.split("\n")
-                if line.strip() and line.strip().startswith("TC-")
-            ]
+        generated_test_cases = [
+            f"{tc.id}: {tc.description}" for tc in response.test_cases
+        ]
 
         return {"generated_test_cases": generated_test_cases}
 
@@ -256,6 +276,9 @@ async def analyze_test_scenario(
         temperature = get_context_value(runtime, "temperature", 0.0)
         llm = get_llm(model, temperature)
 
+        # Utiliser structured output avec le modèle Pydantic
+        structured_llm = llm.with_structured_output(TestCaseAnalysis)
+
         system_prompt = """Tu es un expert en analyse de tests logiciels.
 Ta tâche est d'analyser un scénario de test XML et de déterminer quels test cases de la liste sont couverts.
 
@@ -265,13 +288,6 @@ Analyse le scénario XML en détail:
 - Identifie les conditions testées
 
 Pour chaque test case de la liste, indique s'il est présent (couvert) dans le scénario.
-
-Réponds UNIQUEMENT en JSON au format:
-[
-    {"id": "TC-001", "description": "Description", "present": true},
-    {"id": "TC-002", "description": "Description", "present": false},
-    ...
-]
 
 present = true signifie que ce cas de test EST vérifié par le scénario XML.
 present = false signifie que ce cas de test N'EST PAS vérifié par le scénario XML.
@@ -292,8 +308,6 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
 ```xml
 {state.test_scenario}
 ```
-
-Pour chaque test case, indique si le scénario le couvre (present: true/false).
 """
 
         messages = [
@@ -301,22 +315,13 @@ Pour chaque test case, indique si le scénario le couvre (present: true/false).
             HumanMessage(content=user_prompt),
         ]
 
-        response = await llm.ainvoke(messages)
-        content = str(response.content)
+        response = cast(TestCaseAnalysis, await structured_llm.ainvoke(messages))
 
-        json_match = re.search(r"\[.*\]", content, re.DOTALL)
-        if json_match:
-            test_cases_with_status = json.loads(json_match.group())
-        else:
-            # Fallback: marquer tous comme non couverts
-            test_cases_with_status = []
-            for tc in state.generated_test_cases:
-                parts = tc.split(":", 1)
-                tc_id = parts[0].strip()
-                tc_desc = parts[1].strip() if len(parts) > 1 else ""
-                test_cases_with_status.append(
-                    {"id": tc_id, "description": tc_desc, "present": False}
-                )
+        # Convertir les objets Pydantic en TypedDict pour la compatibilité
+        test_cases_with_status: List[TestCase] = [
+            {"id": tc.id, "description": tc.description, "present": tc.present}
+            for tc in response.test_cases
+        ]
 
         return {"test_cases_with_status": test_cases_with_status}
 
