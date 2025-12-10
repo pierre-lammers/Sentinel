@@ -1,4 +1,4 @@
-.PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests rag
+.PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests rag codespell
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -58,6 +58,9 @@ spell_check:
 spell_fix:
 	codespell --toml pyproject.toml -w
 
+codespell:
+	codespell --ignore-words .codespellignore src/
+
 ######################
 # HELP
 ######################
@@ -66,6 +69,7 @@ help:
 	@echo '----'
 	@echo 'format                       - run code formatters'
 	@echo 'lint                         - run linters'
+	@echo 'codespell                    - check code spelling errors'
 	@echo 'test                         - run unit tests'
 	@echo 'tests                        - run unit tests'
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'

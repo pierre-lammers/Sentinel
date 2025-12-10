@@ -131,10 +131,8 @@ class State:
 
 def get_vector_store() -> Chroma:
     """Initialise et retourne le vector store Chroma."""
-    google_api_key = os.getenv("GOOGLE_API_KEY")
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/gemini-embedding-001",
-        google_api_key=SecretStr(google_api_key) if google_api_key else None,
     )
     return Chroma(
         collection_name="srs_db",
@@ -149,8 +147,8 @@ def get_llm(model: str | None = None, temperature: float = 0.0) -> ChatOpenAI:
     return ChatOpenAI(
         model=model or "google/gemini-2.5-flash-lite-preview-09-2025",
         temperature=temperature,
-        api_key=SecretStr(api_key) if api_key else None,
         base_url="https://openrouter.ai/api/v1",
+        api_key=SecretStr(api_key) if api_key else None,
     )
 
 
@@ -317,7 +315,7 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
 
         response = cast(TestCaseAnalysis, await structured_llm.ainvoke(messages))
 
-        # Convertir les objets Pydantic en TypedDict pour la compatibilité
+        # Convertir les objects Pydantic en TypedDict pour la compatibilité
         test_cases_with_status: List[TestCase] = [
             {"id": tc.id, "description": tc.description, "present": tc.present}
             for tc in response.test_cases

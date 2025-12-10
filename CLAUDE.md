@@ -65,6 +65,7 @@ Linting and formatting:
 ```bash
 make format                        # Format Python code
 make lint                          # Check code style, types, and imports
+make codespell                     # Check code spelling errors
 ```
 
 Running the application:
@@ -150,5 +151,21 @@ See LangGraph documentation for cloud deployment details.
 
 ## Code conventions
 
-When writing code, adhere to the repository’s conventions and refer to the MCP LangChain documentation.
+When writing code, adhere to the repository's conventions and refer to the MCP LangChain documentation.
 Ensure that the lint with ruff and mypy are correct.
+
+### Linting Requirements
+
+After any code changes, **ALWAYS** verify that all linting tools pass:
+
+```bash
+make lint       # Runs both ruff and mypy checks
+make codespell  # Runs codespell to check for spelling errors
+```
+
+This should output no errors before considering a task complete. If there are linting errors:
+1. Fix them immediately
+2. Re-run `make lint` and `make codespell` to confirm all errors are resolved
+3. Only then mark the task as done
+
+**Important**: Before committing or creating a pull request, always run both `make lint` and `make codespell` to ensure code quality and spelling correctness.

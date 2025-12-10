@@ -1,6 +1,5 @@
 """Script de création du vector store Chroma à partir du document SRS."""
 
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,7 +8,6 @@ from langchain_community.document_loaders.parsers import TesseractBlobParser
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_pymupdf4llm import PyMuPDF4LLMLoader  # type: ignore[import-untyped]
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pydantic import SecretStr
 
 root_dir = Path(__file__).parent.parent.parent
 load_dotenv(root_dir / ".env")
@@ -33,10 +31,8 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 all_splits = text_splitter.split_documents(docs)
 
-google_api_key = os.getenv("GOOGLE_API_KEY")
 embeddings = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-001",
-    google_api_key=SecretStr(google_api_key) if google_api_key else None,
 )
 
 chroma_db_path = root_dir / "rag_srs_chroma_db"
