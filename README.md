@@ -29,3 +29,6 @@ langgraph dev
 This will start LangGraph Server.
 You can click to the link "LangGraph Studio Web UI" in the console to go to webpage.
 
+## Graph
+
+![alt text](image.png)
