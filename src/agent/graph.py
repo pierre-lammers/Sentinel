@@ -8,9 +8,11 @@ Ce module définit un graph LangGraph qui:
 
 from __future__ import annotations
 
+import asyncio
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, cast
+from pathlib import Path
+from typing import Any, cast
 
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
@@ -53,7 +55,7 @@ class GeneratedTestCase(BaseModel):
 class TestCaseList(BaseModel):
     """Liste de test cases générés pour un requirement."""
 
-    test_cases: List[GeneratedTestCase] = Field(
+    test_cases: list[GeneratedTestCase] = Field(
         description="Liste exhaustive des test cases couvrant tous les scénarios possibles"
     )
 
@@ -71,9 +73,17 @@ class AnalyzedTestCase(BaseModel):
 class TestCaseAnalysis(BaseModel):
     """Résultat de l'analyse de couverture des test cases."""
 
-    test_cases: List[AnalyzedTestCase] = Field(
+    test_cases: list[AnalyzedTestCase] = Field(
         description="Liste des test cases avec leur statut de couverture"
     )
+
+
+class ScenarioResult(TypedDict):
+    """Résultat de l'analyse d'un scénario de test."""
+
+    scenario_name: str
+    scenario_path: str
+    test_cases: list[TestCase]
 
 
 # =============================================================================
@@ -98,8 +108,7 @@ class Context(TypedDict, total=False):
 class StateInput(TypedDict):
     """Schéma d'input pour la pipeline."""
 
-    req_id: str  # ID du requirement à analyser
-    test_scenario: str  # Contenu XML du scénario de test
+    req_name: str  # Nom du requirement (ex: ARR-044)
 
 
 @dataclass
@@ -107,21 +116,29 @@ class State:
     """État de la pipeline de couverture de tests."""
 
     # --- Inputs ---
-    req_id: str = ""  # ID du requirement à analyser
-    test_scenario: str = ""  # Contenu XML du scénario de test
+    req_name: str = ""  # Nom du requirement (ex: ARR-044)
+
+    # --- Étape 0: Chargement des scénarios ---
+    scenario_paths: list[str] = field(default_factory=list)  # Chemins des fichiers XML
+    current_scenario_index: int = 0  # Index du scénario en cours
+    current_scenario_content: str = ""  # Contenu XML du scénario actuel
+    current_scenario_name: str = ""  # Nom du scénario actuel
 
     # --- Étape 1: RAG ---
     requirement_description: str = ""
     rag_context: str = ""
 
     # --- Étape 2: LLM1 - Génération des test cases ---
-    generated_test_cases: List[str] = field(default_factory=list)
+    generated_test_cases: list[str] = field(default_factory=list)
 
-    # --- Étape 3: LLM2 - Analyse du scénario ---
-    test_cases_with_status: List[TestCase] = field(default_factory=list)
+    # --- Étape 3: LLM2 - Analyse des scénarios (résultats cumulés) ---
+    scenario_results: list[ScenarioResult] = field(default_factory=list)
+
+    # --- Étape 4: Agrégation des test cases ---
+    aggregated_test_cases: list[TestCase] = field(default_factory=list)
 
     # --- Metadata ---
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 # =============================================================================
@@ -157,6 +174,66 @@ def get_context_value(runtime: Runtime[Context], key: str, default: Any = None) 
     return (runtime.context or {}).get(key, default)
 
 
+def get_dataset_path() -> Path:
+    """Retourne le chemin du dossier dataset."""
+    return Path(__file__).parent.parent.parent / "dataset"
+
+
+async def find_scenario_xml_files(req_name: str) -> list[str]:
+    """Trouve tous les fichiers XML de scénarios pour un requirement donné.
+
+    Args:
+        req_name: Nom du requirement (ex: ARR-044)
+
+    Returns:
+        Liste des chemins absolus vers les fichiers XML de scénarios
+    """
+    dataset_path = get_dataset_path()
+    req_folder = dataset_path / f"TS_{req_name}"
+
+    # Vérifier l'existence du dossier de manière asynchrone
+    exists = await asyncio.to_thread(req_folder.exists)
+    if not exists:
+        return []
+
+    # Chercher les fichiers XML dans les sous-dossiers test_XX (async)
+    async def find_files() -> list[str]:
+        scenario_files: list[str] = []
+        # glob est bloquant, le déplacer dans un thread
+        test_dirs = await asyncio.to_thread(lambda: sorted(req_folder.glob("test_*")))
+        for test_dir in test_dirs:
+            is_dir = await asyncio.to_thread(test_dir.is_dir)
+            if is_dir:
+                xml_files = await asyncio.to_thread(
+                    lambda: list(test_dir.glob("scenario_*.xml"))
+                )
+                scenario_files.extend(str(f) for f in xml_files)
+        return scenario_files
+
+    return await find_files()
+
+
+# =============================================================================
+# Node 0: Load Scenarios
+# =============================================================================
+
+
+async def load_scenarios(
+    state: State,
+    runtime: Runtime[Context],  # noqa: ARG001
+) -> dict[str, Any]:
+    """Charge la liste des scénarios XML pour le requirement."""
+    scenario_paths = await find_scenario_xml_files(state.req_name)
+
+    if not scenario_paths:
+        return {
+            "errors": state.errors
+            + [f"Aucun scénario trouvé pour le requirement {state.req_name}"]
+        }
+
+    return {"scenario_paths": scenario_paths}
+
+
 # =============================================================================
 # Node 1: RAG Retrieval
 # =============================================================================
@@ -164,19 +241,19 @@ def get_context_value(runtime: Runtime[Context], key: str, default: Any = None) 
 
 async def retrieve_requirement(
     state: State, runtime: Runtime[Context]
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Récupère la description du requirement via RAG."""
     try:
         vector_store = get_vector_store()
         top_k = get_context_value(runtime, "rag_top_k", 5)
 
-        query = f"Requirement {state.req_id}"
+        query = f"Requirement {state.req_name}"
         docs = await vector_store.asimilarity_search(query, k=top_k)
 
         if not docs:
             return {
                 "errors": state.errors
-                + [f"Aucun document trouvé pour le requirement {state.req_id}"]
+                + [f"Aucun document trouvé pour le requirement {state.req_name}"]
             }
 
         rag_context = "\n\n---\n\n".join(doc.page_content for doc in docs)
@@ -198,7 +275,7 @@ async def retrieve_requirement(
 
 async def generate_test_cases(
     state: State, runtime: Runtime[Context]
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Génère tous les test cases à couvrir pour le requirement."""
     if state.errors:
         return {}
@@ -229,7 +306,7 @@ Sois exhaustif et couvre tous les scénarios possibles:
 
         user_prompt = f"""Génère tous les test cases pour le requirement suivant:
 
-**Requirement ID**: {state.req_id}
+**Requirement ID**: {state.req_name}
 
 **Description du Requirement**:
 {state.requirement_description}
@@ -256,15 +333,49 @@ Sois exhaustif et couvre tous les scénarios possibles:
 
 
 # =============================================================================
-# Node 3: LLM2 - Scenario Analysis
+# Node 3: Load Current Scenario
+# =============================================================================
+
+
+async def load_current_scenario(
+    state: State,
+    runtime: Runtime[Context],  # noqa: ARG001
+) -> dict[str, Any]:
+    """Charge le contenu du scénario XML actuel."""
+    if state.errors or not state.scenario_paths:
+        return {}
+
+    if state.current_scenario_index >= len(state.scenario_paths):
+        return {}
+
+    scenario_path = state.scenario_paths[state.current_scenario_index]
+    scenario_name = Path(scenario_path).stem
+
+    try:
+        with open(scenario_path, encoding="utf-8") as f:
+            content = f.read()
+        return {
+            "current_scenario_content": content,
+            "current_scenario_name": scenario_name,
+        }
+    except Exception as e:
+        return {"errors": state.errors + [f"Erreur lecture {scenario_path}: {str(e)}"]}
+
+
+# =============================================================================
+# Node 4: LLM2 - Scenario Analysis
 # =============================================================================
 
 
 async def analyze_test_scenario(
     state: State, runtime: Runtime[Context]
-) -> Dict[str, Any]:
-    """Analyse le scénario de test et marque les test cases couverts."""
-    if state.errors or not state.generated_test_cases:
+) -> dict[str, Any]:
+    """Analyse le scénario de test actuel et marque les test cases couverts."""
+    if (
+        state.errors
+        or not state.generated_test_cases
+        or not state.current_scenario_content
+    ):
         return {}
 
     try:
@@ -295,7 +406,9 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
 
         user_prompt = f"""Analyse le scénario de test suivant et détermine quels test cases sont couverts.
 
-**Requirement**: {state.req_id}
+**Requirement**: {state.req_name}
+**Scénario**: {state.current_scenario_name}
+
 **Description du Requirement**:
 {state.requirement_description[:1000]}
 
@@ -304,7 +417,7 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
 
 **Scénario de Test XML**:
 ```xml
-{state.test_scenario}
+{state.current_scenario_content}
 ```
 """
 
@@ -315,16 +428,89 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
 
         response = cast(TestCaseAnalysis, await structured_llm.ainvoke(messages))
 
-        # Convertir les objects Pydantic en TypedDict pour la compatibilité
-        test_cases_with_status: List[TestCase] = [
+        # Convertir les objects Pydantic en TypedDict et ajouter aux résultats
+        test_cases_with_status: list[TestCase] = [
             {"id": tc.id, "description": tc.description, "present": tc.present}
             for tc in response.test_cases
         ]
 
-        return {"test_cases_with_status": test_cases_with_status}
+        # Créer le résultat pour ce scénario
+        scenario_result: ScenarioResult = {
+            "scenario_name": state.current_scenario_name,
+            "scenario_path": state.scenario_paths[state.current_scenario_index],
+            "test_cases": test_cases_with_status,
+        }
+
+        # Ajouter aux résultats cumulés
+        return {"scenario_results": state.scenario_results + [scenario_result]}
 
     except Exception as e:
         return {"errors": state.errors + [f"Erreur LLM2: {str(e)}"]}
+
+
+# =============================================================================
+# Node 5: Aggregate Test Cases
+# =============================================================================
+
+
+async def aggregate_test_cases(
+    state: State,
+    runtime: Runtime[Context],  # noqa: ARG001
+) -> dict[str, Any]:
+    """Agrège les test cases de tous les scénarios avec OR sur le statut present."""
+    if not state.scenario_results:
+        return {"aggregated_test_cases": []}
+
+    # Créer un dictionnaire {test_case_id: {description, present}}
+    aggregated: dict[str, TestCase] = {}
+
+    for scenario_result in state.scenario_results:
+        for test_case in scenario_result["test_cases"]:
+            tc_id = test_case["id"]
+            if tc_id not in aggregated:
+                # Premier scénario pour ce test case
+                aggregated[tc_id] = {
+                    "id": tc_id,
+                    "description": test_case["description"],
+                    "present": test_case["present"],
+                }
+            else:
+                # Combiner avec OR: true si SOIT ancien SOIT nouveau est true
+                aggregated[tc_id]["present"] = (
+                    aggregated[tc_id]["present"] or test_case["present"]
+                )
+
+    # Convertir en liste
+    aggregated_list = list(aggregated.values())
+
+    return {"aggregated_test_cases": aggregated_list}
+
+
+# =============================================================================
+# Node 6: Move to Next Scenario
+# =============================================================================
+
+
+async def move_to_next_scenario(
+    state: State,
+    runtime: Runtime[Context],  # noqa: ARG001
+) -> dict[str, Any]:
+    """Incrémente l'index pour passer au scénario suivant."""
+    return {"current_scenario_index": state.current_scenario_index + 1}
+
+
+# =============================================================================
+# Conditional Edge: Check if more scenarios
+# =============================================================================
+
+
+def has_more_scenarios(state: State) -> str:
+    """Vérifie s'il reste des scénarios à analyser."""
+    if state.errors:
+        return "end"
+    if state.current_scenario_index < len(state.scenario_paths):
+        return "continue"
+    return "end"
 
 
 # =============================================================================
@@ -333,12 +519,27 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
 
 graph = (
     StateGraph(State, context_schema=Context)
+    # Nodes
+    .add_node("load_scenarios", load_scenarios)
     .add_node("retrieve_requirement", retrieve_requirement)
     .add_node("generate_test_cases", generate_test_cases)
+    .add_node("load_current_scenario", load_current_scenario)
     .add_node("analyze_test_scenario", analyze_test_scenario)
-    .add_edge("__start__", "retrieve_requirement")
+    .add_node("move_to_next_scenario", move_to_next_scenario)
+    .add_node("aggregate_test_cases", aggregate_test_cases)
+    # Edges
+    .add_edge("__start__", "load_scenarios")
+    .add_edge("load_scenarios", "retrieve_requirement")
     .add_edge("retrieve_requirement", "generate_test_cases")
-    .add_edge("generate_test_cases", "analyze_test_scenario")
-    .add_edge("analyze_test_scenario", "__end__")
+    .add_edge("generate_test_cases", "load_current_scenario")
+    .add_edge("load_current_scenario", "analyze_test_scenario")
+    .add_edge("analyze_test_scenario", "move_to_next_scenario")
+    # Loop back or end
+    .add_conditional_edges(
+        "move_to_next_scenario",
+        has_more_scenarios,
+        {"continue": "load_current_scenario", "end": "aggregate_test_cases"},
+    )
+    .add_edge("aggregate_test_cases", "__end__")
     .compile(name="Test Coverage Pipeline")
 )
