@@ -36,7 +36,7 @@ all_splits = text_splitter.split_documents(docs)
 google_api_key = os.getenv("GOOGLE_API_KEY")
 embeddings = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-001",
-    google_api_key=SecretStr(google_api_key) if google_api_key else None,
+    google_api_key=SecretStr(google_api_key) if google_api_key else None,  # type: ignore[call-arg]
 )
 
 chroma_db_path = root_dir / "rag_srs_chroma_db"

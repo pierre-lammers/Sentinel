@@ -98,7 +98,7 @@ def get_vector_store() -> Chroma:
     google_api_key = os.getenv("GOOGLE_API_KEY")
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/gemini-embedding-001",
-        google_api_key=SecretStr(google_api_key) if google_api_key else None,
+        google_api_key=SecretStr(google_api_key) if google_api_key else None,  # type: ignore[call-arg]
     )
     return Chroma(
         collection_name="srs_db",
