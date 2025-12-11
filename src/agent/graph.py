@@ -158,12 +158,17 @@ def get_vector_store() -> Chroma:
     )
 
 
-def get_llm(model: str | None = None, temperature: float = 0.0) -> ChatOpenAI:
+def get_llm(
+    model: str | None = None,
+    temperature: float = 0.0,
+    max_completion_tokens: int = 46000,
+) -> ChatOpenAI:
     """Crée une instance LLM via OpenRouter."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     return ChatOpenAI(
         model=model or "google/gemini-2.5-flash-lite-preview-09-2025",
         temperature=temperature,
+        max_completion_tokens=max_completion_tokens,
         base_url="https://openrouter.ai/api/v1",
         api_key=SecretStr(api_key) if api_key else None,
     )
@@ -245,7 +250,7 @@ async def retrieve_requirement(
     """Récupère la description du requirement via RAG."""
     try:
         vector_store = get_vector_store()
-        top_k = get_context_value(runtime, "rag_top_k", 5)
+        top_k = get_context_value(runtime, "rag_top_k", 1)
 
         query = f"Requirement {state.req_name}"
         docs = await vector_store.asimilarity_search(query, k=top_k)
@@ -256,11 +261,10 @@ async def retrieve_requirement(
                 + [f"Aucun document trouvé pour le requirement {state.req_name}"]
             }
 
-        rag_context = "\n\n---\n\n".join(doc.page_content for doc in docs)
         requirement_description = docs[0].page_content
 
         return {
-            "rag_context": rag_context,
+            "rag_context": requirement_description,
             "requirement_description": requirement_description,
         }
 
