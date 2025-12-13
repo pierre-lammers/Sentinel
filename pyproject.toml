@@ -13,7 +13,6 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "langchain>=0.3.0",
     "langchain-core>=0.3.0",
-    "langchain-openai>=0.2.0",
     "langchain-chroma>=0.2.0",
     "langchain-google-genai>=2.0.0",
     "langchain-pymupdf4llm>=0.1.0",
@@ -21,6 +20,7 @@ dependencies = [
     "langchain-community>=0.0.1",
     "chromadb>=0.5.0",
     "langfuse>=2.0.0",
+    "mistralai>=1.9.11",
 ]
 
 
