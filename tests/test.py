@@ -1,10 +1,17 @@
 """Experiment for requirement evaluation using Langfuse datasets."""
 
+import sys
+from pathlib import Path
 from typing import Any
 
 from langfuse import Langfuse
 
-from agent import graph
+# Add project root to path so imports work from anywhere
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from agent import graph  # noqa: E402
+from tests.evaluator import test_case_coverage_evaluator  # noqa: E402
 
 
 def run_all_experiments() -> None:
@@ -63,11 +70,12 @@ def run_all_experiments() -> None:
     # Get dataset from Langfuse
     dataset = langfuse.get_dataset("requirements-evaluation")
 
-    # Run experiment on entire dataset
+    # Run experiment on entire dataset with evaluator
     experiment_result = dataset.run_experiment(
         name="Full Dataset Pipeline Test",
         description="Evaluation of entire requirements-evaluation dataset for test case generation",
         task=requirement_task,  # type: ignore[arg-type]
+        evaluators=[test_case_coverage_evaluator],
     )
 
     # Display results
