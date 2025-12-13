@@ -1,6 +1,7 @@
 """Experiment evaluators for requirement evaluation using Langfuse datasets."""
 
 import json
+import os
 from typing import Any
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -22,8 +23,13 @@ def test_case_coverage_evaluator(
     Returns:
         Evaluation object with score and reasoning
     """
-    # Initialize LLM for evaluation (using Gemini 2.0 Flash)
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0)
+    # Initialize LLM for evaluation using Google Gemini
+    api_key = os.getenv("GOOGLE_API_KEY")
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        api_key=api_key,
+        temperature=0,
+    )
 
     # Extract aggregated_test_cases from output and expected_output
     if isinstance(output, dict):

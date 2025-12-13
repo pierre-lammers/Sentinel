@@ -39,7 +39,7 @@ You can click to the link "LangGraph Studio Web UI" in the console to go to webp
 
 ![alt text](image.png)
 
-## Exemple of .env
+## Example of .env
 
 LANGSMITH_PROJECT=new-agent
 
