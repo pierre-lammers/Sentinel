@@ -161,7 +161,7 @@ def get_vector_store() -> Chroma:
 def get_llm(
     model: str | None = None,
     temperature: float = 0.0,
-    max_completion_tokens: int = 46000,
+    max_completion_tokens: int = 40000,
 ) -> ChatOpenAI:
     """Crée une instance LLM via OpenRouter."""
     api_key = os.getenv("OPENROUTER_API_KEY")

@@ -1,0 +1,384 @@
+{
+  "req_name": "ARR-044",
+  "scenario_paths": [
+    "dataset/TS_ARR-044/test_01/scenario_SKYRADAR-ARR-044-01.xml",
+    "dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-02.xml"
+  ],
+  "scenario_results": [
+    {
+      "scenario_name": "scenario_SKYRADAR-ARR-044-01",
+      "scenario_path": "dataset/TS_ARR-044/test_01/scenario_SKYRADAR-ARR-044-01.xml",
+      "test_cases": [
+        {
+          "id": "TC-001",
+          "description": "Cas Nominal: Toutes conditions vraies (AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai>120s, runway assignée, AMAN activé, séparation OK) → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-002",
+          "description": "Condition C1 NON satisfaite: AMAN status=DEGRADED (autres conditions vraies) → alert NE DOIT PAS être généré",
+          "present": true
+        },
+        {
+          "id": "TC-003",
+          "description": "Condition C1 NON satisfaite: AMAN status=UNAVAILABLE (autres conditions vraies) → alert NE DOIT PAS être généré",
+          "present": true
+        },
+        {
+          "id": "TC-004",
+          "description": "Transition d'état C1: AMAN status passe de DEGRADED à OPERATIONAL → alert DOIT être généré après transition",
+          "present": true
+        },
+        {
+          "id": "TC-005",
+          "description": "Transition d'état C1: AMAN status passe de OPERATIONAL à UNAVAILABLE → alert NE DOIT PLUS être généré après transition",
+          "present": true
+        },
+        {
+          "id": "TC-006",
+          "description": "Condition C2 NON satisfaite: Track en phase CRUISE (pas ARRIVAL), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-007",
+          "description": "Condition C2 NON satisfaite: Track en phase ARRIVAL mais time-to-threshold INVALIDE, autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-008",
+          "description": "Transition d'état C2: Track passe de CRUISE à ARRIVAL avec TTT valide → alert DOIT être généré après transition",
+          "present": false
+        },
+        {
+          "id": "TC-009",
+          "description": "Transition d'état C2: Time-to-threshold devient INVALIDE pendant phase ARRIVAL → alert NE DOIT PLUS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-010",
+          "description": "Condition C3 NON satisfaite: Track HORS des limites E-TMA boundary, autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-011",
+          "description": "Transition d'état C3: Track ENTRE dans les limites E-TMA → alert DOIT être généré après entrée",
+          "present": false
+        },
+        {
+          "id": "TC-012",
+          "description": "Condition C4 LIMITE: Délai d'arrivée calculé = EXACTEMENT 120s (seuil AMAN_MIN_DELAY_THRESHOLD), autres conditions vraies → comportement selon spec (typiquement alert PAS généré car condition est >120 pas >=120)",
+          "present": false
+        },
+        {
+          "id": "TC-013",
+          "description": "Condition C4 NON satisfaite: Délai d'arrivée calculé < 120s (ex: 119s), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-014",
+          "description": "Condition C4 satisfaite: Délai d'arrivée calculé > 120s (ex: 180s), autres conditions vraies → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-015",
+          "description": "Transition d'état C4: Délai d'arrivée passe de <120s à >120s → alert DOIT être généré après augmentation du délai",
+          "present": false
+        },
+        {
+          "id": "TC-016",
+          "description": "Condition C5 NON satisfaite: Track N'A PAS de piste d'arrivée assignée (runway non spécifié), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-017",
+          "description": "Condition C5 NON satisfaite: Track a une piste assignée MAIS AMAN sequencing est DÉSACTIVÉ sur cette piste, autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-018",
+          "description": "Condition C5 satisfaite: Track a une piste assignée ET AMAN sequencing ACTIVÉ → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-019",
+          "description": "Condition C6 NON satisfaite: Changement de position de séquence VIOLERAIT la séparation minimale TBS_MIN_SEPARATION_TIME (90s), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-020",
+          "description": "Condition C6 satisfaite: Changement de position de séquence RESPECTE la séparation minimale (>90s entre aircraft), autres conditions vraies → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-021",
+          "description": "Condition C6 LIMITE: Changement de position avec séparation = EXACTEMENT 90s (limite TBS_MIN_SEPARATION_TIME), autres conditions vraies → comportement selon spec",
+          "present": false
+        },
+        {
+          "id": "TC-022",
+          "description": "Cas de Combinaison: AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai=185s (>120s), runway=25R, AMAN activé, potentialSequencePosition change de 5 à 3 → alert généré avec détails corrects (currentPosition=5, newPosition=3, delaySeconds=185)",
+          "present": true
+        },
+        {
+          "id": "TC-023",
+          "description": "Cas de Combinaison: AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai=170s (>120s), runway=25R, AMAN activé, potentialSequencePosition change de 6 à 4 → alert généré avec détails corrects (currentPosition=6, newPosition=4, delaySeconds=170)",
+          "present": false
+        },
+        {
+          "id": "TC-024",
+          "description": "Stabilité: Conditions restent inchangées et satisfaites → alert continue d'être généré de manière cohérente",
+          "present": true
+        }
+      ]
+    },
+    {
+      "scenario_name": "scenario_SKYRADAR-ARR-044-02",
+      "scenario_path": "dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-02.xml",
+      "test_cases": [
+        {
+          "id": "TC-001",
+          "description": "Cas Nominal: Toutes conditions vraies (AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai>120s, runway assignée, AMAN activé, séparation OK) → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-002",
+          "description": "Condition C1 NON satisfaite: AMAN status=DEGRADED (autres conditions vraies) → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-003",
+          "description": "Condition C1 NON satisfaite: AMAN status=UNAVAILABLE (autres conditions vraies) → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-004",
+          "description": "Transition d'état C1: AMAN status passe de DEGRADED à OPERATIONAL → alert DOIT être généré après transition",
+          "present": false
+        },
+        {
+          "id": "TC-005",
+          "description": "Transition d'état C1: AMAN status passe de OPERATIONAL à UNAVAILABLE → alert NE DOIT PLUS être généré après transition",
+          "present": false
+        },
+        {
+          "id": "TC-006",
+          "description": "Condition C2 NON satisfaite: Track en phase CRUISE (pas ARRIVAL), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": true
+        },
+        {
+          "id": "TC-007",
+          "description": "Condition C2 NON satisfaite: Track en phase ARRIVAL mais time-to-threshold INVALIDE, autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": true
+        },
+        {
+          "id": "TC-008",
+          "description": "Transition d'état C2: Track passe de CRUISE à ARRIVAL avec TTT valide → alert DOIT être généré après transition",
+          "present": true
+        },
+        {
+          "id": "TC-009",
+          "description": "Transition d'état C2: Time-to-threshold devient INVALIDE pendant phase ARRIVAL → alert NE DOIT PLUS être généré",
+          "present": true
+        },
+        {
+          "id": "TC-010",
+          "description": "Condition C3 NON satisfaite: Track HORS des limites E-TMA boundary, autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-011",
+          "description": "Transition d'état C3: Track ENTRE dans les limites E-TMA → alert DOIT être généré après entrée",
+          "present": false
+        },
+        {
+          "id": "TC-012",
+          "description": "Condition C4 LIMITE: Délai d'arrivée calculé = EXACTEMENT 120s (seuil AMAN_MIN_DELAY_THRESHOLD), autres conditions vraies → comportement selon spec (typiquement alert PAS généré car condition est >120 pas >=120)",
+          "present": false
+        },
+        {
+          "id": "TC-013",
+          "description": "Condition C4 NON satisfaite: Délai d'arrivée calculé < 120s (ex: 119s), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-014",
+          "description": "Condition C4 satisfaite: Délai d'arrivée calculé > 120s (ex: 165-175s), autres conditions vraies → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-015",
+          "description": "Transition d'état C4: Délai d'arrivée passe de <120s à >120s → alert DOIT être généré après augmentation du délai",
+          "present": false
+        },
+        {
+          "id": "TC-016",
+          "description": "Condition C5 NON satisfaite: Track N'A PAS de piste d'arrivée assignée (runway non spécifié), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-017",
+          "description": "Condition C5 NON satisfaite: Track a une piste assignée MAIS AMAN sequencing est DÉSACTIVÉ sur cette piste, autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-018",
+          "description": "Condition C5 satisfaite: Track a une piste assignée ET AMAN sequencing ACTIVÉ → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-019",
+          "description": "Condition C6 NON satisfaite: Changement de position de séquence VIOLERAIT la séparation minimale TBS_MIN_SEPARATION_TIME (90s), autres conditions vraies → alert NE DOIT PAS être généré",
+          "present": false
+        },
+        {
+          "id": "TC-020",
+          "description": "Condition C6 satisfaite: Changement de position de séquence RESPECTE la séparation minimale (>90s entre aircraft), autres conditions vraies → alert DOIT être généré",
+          "present": true
+        },
+        {
+          "id": "TC-021",
+          "description": "Condition C6 LIMITE: Changement de position avec séparation = EXACTEMENT 90s (limite TBS_MIN_SEPARATION_TIME), autres conditions vraies → comportement selon spec",
+          "present": false
+        },
+        {
+          "id": "TC-022",
+          "description": "Cas de Combinaison: AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai=185s (>120s), runway=25R, AMAN activé, potentialSequencePosition change de 5 à 3 → alert généré avec détails corrects (currentPosition=5, newPosition=3, delaySeconds=185)",
+          "present": false
+        },
+        {
+          "id": "TC-023",
+          "description": "Cas de Combinaison: AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai=170s (>120s), runway=25R, AMAN activé, potentialSequencePosition change de 6 à 4 → alert généré avec détails corrects (currentPosition=6, newPosition=4, delaySeconds=170)",
+          "present": true
+        },
+        {
+          "id": "TC-024",
+          "description": "Stabilité: Conditions restent inchangées et satisfaites → alert continue d'être généré de manière cohérente",
+          "present": true
+        }
+      ]
+    }
+  ],
+  "aggregated_test_cases": [
+    {
+      "id": "TC-001",
+      "description": "Cas Nominal: Toutes conditions vraies (AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai>120s, runway assignée, AMAN activé, séparation OK) → alert DOIT être généré",
+      "present": true
+    },
+    {
+      "id": "TC-002",
+      "description": "Condition C1 NON satisfaite: AMAN status=DEGRADED (autres conditions vraies) → alert NE DOIT PAS être généré",
+      "present": true
+    },
+    {
+      "id": "TC-003",
+      "description": "Condition C1 NON satisfaite: AMAN status=UNAVAILABLE (autres conditions vraies) → alert NE DOIT PAS être généré",
+      "present": true
+    },
+    {
+      "id": "TC-004",
+      "description": "Transition d'état C1: AMAN status passe de DEGRADED à OPERATIONAL → alert DOIT être généré après transition",
+      "present": true
+    },
+    {
+      "id": "TC-005",
+      "description": "Transition d'état C1: AMAN status passe de OPERATIONAL à UNAVAILABLE → alert NE DOIT PLUS être généré après transition",
+      "present": true
+    },
+    {
+      "id": "TC-006",
+      "description": "Condition C2 NON satisfaite: Track en phase CRUISE (pas ARRIVAL), autres conditions vraies → alert NE DOIT PAS être généré",
+      "present": true
+    },
+    {
+      "id": "TC-007",
+      "description": "Condition C2 NON satisfaite: Track en phase ARRIVAL mais time-to-threshold INVALIDE, autres conditions vraies → alert NE DOIT PAS être généré",
+      "present": true
+    },
+    {
+      "id": "TC-008",
+      "description": "Transition d'état C2: Track passe de CRUISE à ARRIVAL avec TTT valide → alert DOIT être généré après transition",
+      "present": true
+    },
+    {
+      "id": "TC-009",
+      "description": "Transition d'état C2: Time-to-threshold devient INVALIDE pendant phase ARRIVAL → alert NE DOIT PLUS être généré",
+      "present": true
+    },
+    {
+      "id": "TC-010",
+      "description": "Condition C3 NON satisfaite: Track HORS des limites E-TMA boundary, autres conditions vraies → alert NE DOIT PAS être généré",
+      "present": false
+    },
+    {
+      "id": "TC-011",
+      "description": "Transition d'état C3: Track ENTRE dans les limites E-TMA → alert DOIT être généré après entrée",
+      "present": false
+    },
+    {
+      "id": "TC-012",
+      "description": "Condition C4 LIMITE: Délai d'arrivée calculé = EXACTEMENT 120s (seuil AMAN_MIN_DELAY_THRESHOLD), autres conditions vraies → comportement selon spec (typiquement alert PAS généré car condition est >120 pas >=120)",
+      "present": false
+    },
+    {
+      "id": "TC-013",
+      "description": "Condition C4 NON satisfaite: Délai d'arrivée calculé < 120s (ex: 119s), autres conditions vraies → alert NE DOIT PAS être généré",
+      "present": false
+    },
+    {
+      "id": "TC-014",
+      "description": "Condition C4 satisfaite: Délai d'arrivée calculé > 120s (ex: 165-190s), autres conditions vraies → alert DOIT être généré",
+      "present": true
+    },
+    {
+      "id": "TC-015",
+      "description": "Transition d'état C4: Délai d'arrivée passe de <120s à >120s → alert DOIT être généré après augmentation du délai",
+      "present": false
+    },
+    {
+      "id": "TC-016",
+      "description": "Condition C5 NON satisfaite: Track N'A PAS de piste d'arrivée assignée (runway non spécifié), autres conditions vraies → alert NE DOIT PAS être généré",
+      "present": false
+    },
+    {
+      "id": "TC-017",
+      "description": "Condition C5 NON satisfaite: Track a une piste assignée MAIS AMAN sequencing est DÉSACTIVÉ sur cette piste, autres conditions vraies → alert NE DOIT PAS être généré",
+      "present": false
+    },
+    {
+      "id": "TC-018",
+      "description": "Condition C5 satisfaite: Track a une piste assignée ET AMAN sequencing ACTIVÉ → alert DOIT être généré",
+      "present": true
+    },
+    {
+      "id": "TC-019",
+      "description": "Condition C6 NON satisfaite: Changement de position de séquence VIOLERAIT la séparation minimale TBS_MIN_SEPARATION_TIME (90s), autres conditions vraies → alert NE DOIT PAS être généré",
+      "present": false
+    },
+    {
+      "id": "TC-020",
+      "description": "Condition C6 satisfaite: Changement de position de séquence RESPECTE la séparation minimale (>90s entre aircraft), autres conditions vraies → alert DOIT être généré",
+      "present": true
+    },
+    {
+      "id": "TC-021",
+      "description": "Condition C6 LIMITE: Changement de position avec séparation = EXACTEMENT 90s (limite TBS_MIN_SEPARATION_TIME), autres conditions vraies → comportement selon spec",
+      "present": false
+    },
+    {
+      "id": "TC-022",
+      "description": "Cas de Combinaison: AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai=185s (>120s), runway=25R, AMAN activé, potentialSequencePosition change de 5 à 3 → alert généré avec détails corrects (currentPosition=5, newPosition=3, delaySeconds=185)",
+      "present": true
+    },
+    {
+      "id": "TC-023",
+      "description": "Cas de Combinaison: AMAN=OPERATIONAL, phase=ARRIVAL, TTT valide, délai=170s (>120s), runway=25R, AMAN activé, potentialSequencePosition change de 6 à 4 → alert généré avec détails corrects (currentPosition=6, newPosition=4, delaySeconds=170)",
+      "present": true
+    },
+    {
+      "id": "TC-024",
+      "description": "Stabilité: Conditions restent inchangées et satisfaites → alert continue d'être généré de manière cohérente",
+      "present": true
+    }
+  ],
+  "errors": []
+}

@@ -1,38 +1,81 @@
-import asyncio
+"""Experiment for requirement evaluation using Langfuse datasets."""
+
 from typing import Any
 
-from langfuse.langchain import CallbackHandler
+from langfuse import Langfuse
 
 from agent import graph
 
 
-async def test_arr_044_pipeline_with_langfuse() -> None:
-    """Test the full pipeline for requirement ARR-044 with Langfuse tracing."""
-    # Initialize Langfuse callback handler
-    langfuse_handler = CallbackHandler()
+def run_all_experiments() -> None:
+    """Run experiments for entire dataset using Langfuse."""
+    # Initialize Langfuse client
+    langfuse = Langfuse()
 
-    # Define input for ARR-044
-    inputs = {"req_name": "ARR-044"}
+    # Define task function
+    async def requirement_task(*, item: Any) -> Any:
+        """Task function that runs the graph for a requirement.
 
-    # Invoke the graph with Langfuse callback
-    res: Any = await graph.ainvoke(
-        inputs,  # type: ignore[arg-type]
-        config={"callbacks": [langfuse_handler]},
+        Args:
+            item: DatasetItemClient with input from the dataset
+
+        Returns:
+            Dictionary containing the graph output
+        """
+        # Get input from dataset item
+        input_req_name = item.input["req_name"]
+
+        # Run the graph
+        result: dict[str, Any] = await graph.ainvoke(
+            {"req_name": input_req_name},  # type: ignore[arg-type]
+        )
+
+        # Return result as dictionary
+        return {
+            "req_name": result.get("req_name", ""),
+            "scenario_paths": result.get("scenario_paths", []),
+            "scenario_results": [
+                {
+                    "scenario_name": sr["scenario_name"],
+                    "scenario_path": sr["scenario_path"],
+                    "test_cases": [
+                        {
+                            "id": tc["id"],
+                            "description": tc["description"],
+                            "present": tc["present"],
+                        }
+                        for tc in sr["test_cases"]
+                    ],
+                }
+                for sr in result.get("scenario_results", [])
+            ],
+            "aggregated_test_cases": [
+                {
+                    "id": tc["id"],
+                    "description": tc["description"],
+                    "present": tc["present"],
+                }
+                for tc in result.get("aggregated_test_cases", [])
+            ],
+            "errors": result.get("errors", []),
+        }
+
+    # Get dataset from Langfuse
+    dataset = langfuse.get_dataset("requirements-evaluation")
+
+    # Run experiment on entire dataset
+    experiment_result = dataset.run_experiment(
+        name="Full Dataset Pipeline Test",
+        description="Evaluation of entire requirements-evaluation dataset for test case generation",
+        task=requirement_task,  # type: ignore[arg-type]
     )
 
-    # Verify the result
-    assert res is not None
-
-    # Le résultat est un objet State (dataclass), pas un dict
-    assert hasattr(res, "aggregated_test_cases")
-    assert isinstance(res.aggregated_test_cases, list)
-
-    # Verify that errors list is present
-    assert hasattr(res, "errors")
-
-    # Verify we got test cases generated
-    assert len(res.aggregated_test_cases) > 0, "Expected test cases to be generated"
+    # Display results
+    print(f"\n{'=' * 80}")
+    print("Results for entire dataset")
+    print(f"{'=' * 80}")
+    print(experiment_result.format())
 
 
 if __name__ == "__main__":
-    asyncio.run(test_arr_044_pipeline_with_langfuse())
+    run_all_experiments()
