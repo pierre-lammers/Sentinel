@@ -12,19 +12,21 @@ import asyncio
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from dotenv import load_dotenv
+
+# Load .env from project root
+_env_path = Path(__file__).parent.parent.parent / ".env"
+load_dotenv(_env_path)
 from langchain_chroma import Chroma
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph
 from langgraph.runtime import Runtime
-from pydantic import BaseModel, Field, SecretStr
+from mistralai import Mistral
+from mistralai.models import SystemMessage, UserMessage
+from pydantic import BaseModel, Field, ValidationError
 from typing_extensions import TypedDict
-
-load_dotenv()
 
 
 # =============================================================================
@@ -158,15 +160,12 @@ def get_vector_store() -> Chroma:
     )
 
 
-def get_llm(model: str | None = None, temperature: float = 0.0) -> ChatOpenAI:
-    """Crée une instance LLM via OpenRouter."""
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    return ChatOpenAI(
-        model=model or "google/gemini-2.5-flash-lite-preview-09-2025",
-        temperature=temperature,
-        base_url="https://openrouter.ai/api/v1",
-        api_key=SecretStr(api_key) if api_key else None,
-    )
+def get_mistral_client() -> Mistral:
+    """Crée une instance du client Mistral."""
+    api_key = os.getenv("MISTRAL_API_KEY")
+    if not api_key:
+        raise ValueError("MISTRAL_API_KEY environment variable is not set")
+    return Mistral(api_key=api_key)
 
 
 def get_context_value(runtime: Runtime[Context], key: str, default: Any = None) -> Any:
@@ -245,7 +244,7 @@ async def retrieve_requirement(
     """Récupère la description du requirement via RAG."""
     try:
         vector_store = get_vector_store()
-        top_k = get_context_value(runtime, "rag_top_k", 5)
+        top_k = get_context_value(runtime, "rag_top_k", 1)
 
         query = f"Requirement {state.req_name}"
         docs = await vector_store.asimilarity_search(query, k=top_k)
@@ -256,11 +255,10 @@ async def retrieve_requirement(
                 + [f"Aucun document trouvé pour le requirement {state.req_name}"]
             }
 
-        rag_context = "\n\n---\n\n".join(doc.page_content for doc in docs)
         requirement_description = docs[0].page_content
 
         return {
-            "rag_context": rag_context,
+            "rag_context": requirement_description,
             "requirement_description": requirement_description,
         }
 
@@ -281,14 +279,9 @@ async def generate_test_cases(
         return {}
 
     try:
-        model = get_context_value(
-            runtime, "llm1_model", "google/gemini-2.5-flash-lite-preview-09-2025"
-        )
+        model = get_context_value(runtime, "llm1_model", "codestral-2501")
         temperature = get_context_value(runtime, "temperature", 0.0)
-        llm = get_llm(model, temperature)
-
-        # Utiliser structured output avec le modèle Pydantic
-        structured_llm = llm.with_structured_output(TestCaseList)
+        client = get_mistral_client()
 
         system_prompt = """Tu es un expert en test logiciel et assurance qualité.
 Ta tâche est de générer une liste exhaustive de test cases pour un requirement donné.
@@ -302,6 +295,14 @@ Sois exhaustif et couvre tous les scénarios possibles:
 - Cas limites (valeurs aux bornes)
 - Cas d'erreur (conditions invalides)
 - Transitions d'état (si applicable)
+
+IMPORTANT: Retourne UNIQUEMENT un JSON valide avec la structure suivante:
+{
+  "test_cases": [
+    {"id": "TC-001", "description": "Description du test case"},
+    {"id": "TC-002", "description": "Description du test case"}
+  ]
+}
 """
 
         user_prompt = f"""Génère tous les test cases pour le requirement suivant:
@@ -317,17 +318,36 @@ Sois exhaustif et couvre tous les scénarios possibles:
 
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
+            UserMessage(content=user_prompt),
         ]
 
-        response = cast(TestCaseList, await structured_llm.ainvoke(messages))
+        response = await client.chat.parse_async(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            response_format=TestCaseList,
+        )
+
+        # Récupérer la réponse parsée directement
+        if not response.choices:
+            raise ValueError("No choices returned from Mistral API")
+
+        message = response.choices[0].message
+        if message is None:
+            raise ValueError("No message in response")
+
+        test_case_list = message.parsed
+        if test_case_list is None:
+            raise ValueError("Expected parsed response from Mistral API")
 
         generated_test_cases = [
-            f"{tc.id}: {tc.description}" for tc in response.test_cases
+            f"{tc.id}: {tc.description}" for tc in test_case_list.test_cases
         ]
 
         return {"generated_test_cases": generated_test_cases}
 
+    except ValidationError as e:
+        return {"errors": state.errors + [f"Erreur parsing LLM1: {str(e)}"]}
     except Exception as e:
         return {"errors": state.errors + [f"Erreur LLM1: {str(e)}"]}
 
@@ -379,14 +399,9 @@ async def analyze_test_scenario(
         return {}
 
     try:
-        model = get_context_value(
-            runtime, "llm2_model", "google/gemini-2.5-flash-lite-preview-09-2025"
-        )
+        model = get_context_value(runtime, "llm2_model", "codestral-2501")
         temperature = get_context_value(runtime, "temperature", 0.0)
-        llm = get_llm(model, temperature)
-
-        # Utiliser structured output avec le modèle Pydantic
-        structured_llm = llm.with_structured_output(TestCaseAnalysis)
+        client = get_mistral_client()
 
         system_prompt = """Tu es un expert en analyse de tests logiciels.
 Ta tâche est d'analyser un scénario de test XML et de déterminer quels test cases de la liste sont couverts.
@@ -400,6 +415,14 @@ Pour chaque test case de la liste, indique s'il est présent (couvert) dans le s
 
 present = true signifie que ce cas de test EST vérifié par le scénario XML.
 present = false signifie que ce cas de test N'EST PAS vérifié par le scénario XML.
+
+IMPORTANT: Retourne UNIQUEMENT un JSON valide avec la structure suivante:
+{
+  "test_cases": [
+    {"id": "TC-001", "description": "Description du test case", "present": true},
+    {"id": "TC-002", "description": "Description du test case", "present": false}
+  ]
+}
 """
 
         test_cases_formatted = "\n".join(f"- {tc}" for tc in state.generated_test_cases)
@@ -423,15 +446,32 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
 
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
+            UserMessage(content=user_prompt),
         ]
 
-        response = cast(TestCaseAnalysis, await structured_llm.ainvoke(messages))
+        response = await client.chat.parse_async(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            response_format=TestCaseAnalysis,
+        )
+
+        # Récupérer la réponse parsée directement
+        if not response.choices:
+            raise ValueError("No choices returned from Mistral API")
+
+        message = response.choices[0].message
+        if message is None:
+            raise ValueError("No message in response")
+
+        analysis = message.parsed
+        if analysis is None:
+            raise ValueError("Expected parsed response from Mistral API")
 
         # Convertir les objects Pydantic en TypedDict et ajouter aux résultats
         test_cases_with_status: list[TestCase] = [
             {"id": tc.id, "description": tc.description, "present": tc.present}
-            for tc in response.test_cases
+            for tc in analysis.test_cases
         ]
 
         # Créer le résultat pour ce scénario
@@ -444,6 +484,8 @@ present = false signifie que ce cas de test N'EST PAS vérifié par le scénario
         # Ajouter aux résultats cumulés
         return {"scenario_results": state.scenario_results + [scenario_result]}
 
+    except ValidationError as e:
+        return {"errors": state.errors + [f"Erreur parsing LLM2: {str(e)}"]}
     except Exception as e:
         return {"errors": state.errors + [f"Erreur LLM2: {str(e)}"]}
 
