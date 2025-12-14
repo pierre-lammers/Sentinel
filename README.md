@@ -44,7 +44,7 @@ You can click to the link "LangGraph Studio Web UI" in the console to go to webp
 LANGSMITH_PROJECT=new-agent
 
 GOOGLE_API_KEY=""
-MISTRAL_API_KEY=""
+MISTRAL_API_KEY="" #get an api key https://console.mistral.ai/codestral
 
 LANGFUSE_SECRET_KEY=""
 LANGFUSE_PUBLIC_KEY=""
