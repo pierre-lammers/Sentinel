@@ -10,7 +10,12 @@ from langfuse import Langfuse
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from agent.rag import RAGContext, RAGState, retrieve_requirement  # noqa: E402
+from agent.rag import (  # noqa: E402
+    RAGContext,
+    RAGRuntime,
+    RAGState,
+    retrieve_requirement,
+)
 from tests.rag_evaluator import requirement_retrieval_evaluator  # noqa: E402
 
 
@@ -35,18 +40,11 @@ def run_rag_experiment() -> None:
         # Create RAG state
         rag_state = RAGState(req_name=input_req_name)
 
-        # Create RAG context with default settings
-        rag_context = RAGContext()
-
-        # Create runtime with RAG context
-        class RAGRuntime:
-            def __init__(self, ctx: RAGContext) -> None:
-                self.context = ctx
-
-        rag_runtime = RAGRuntime(rag_context)
+        # Create runtime with default RAG context
+        rag_runtime = RAGRuntime(RAGContext())
 
         # Run RAG retrieval
-        result = await retrieve_requirement(rag_state, rag_runtime)  # type: ignore[arg-type]
+        result = await retrieve_requirement(rag_state, rag_runtime)
 
         # Return result as dictionary
         return {

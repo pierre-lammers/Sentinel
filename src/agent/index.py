@@ -12,37 +12,30 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 root_dir = Path(__file__).parent.parent.parent
 load_dotenv(root_dir / ".env")
 
-srs_pdf_path = root_dir / "dataset" / "SRS.pdf"
-
-loader = PyMuPDF4LLMLoader(
-    str(srs_pdf_path),
+# Load PDF with OCR for images
+docs = PyMuPDF4LLMLoader(
+    str(root_dir / "dataset" / "SRS.pdf"),
     mode="page",
     extract_images=True,
     images_parser=TesseractBlobParser(),
     table_strategy="lines",
-)
+).load()
 
-docs = loader.load()
+# Split with optimized parameters for SRS requirements
+all_splits = RecursiveCharacterTextSplitter(
+    chunk_size=1200,
+    chunk_overlap=300,
+    add_start_index=True,
+    separators=["\n\n\n", "\n\n", "\n", ". ", " ", ""],
+).split_documents(docs)
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,  # chunk size (characters)
-    chunk_overlap=200,  # chunk overlap (characters)
-    add_start_index=True,  # track index in original document
-)
-all_splits = text_splitter.split_documents(docs)
+# Enrich metadata for better retrieval
+for i, split in enumerate(all_splits):
+    split.metadata["chunk_index"] = i
 
-embeddings = MistralAIEmbeddings(
-    model="mistral-embed",
-)
-
-chroma_db_path = root_dir / "rag_srs_chroma_db"
-
-vector_store = Chroma(
+# Index into Chroma
+Chroma(
     collection_name="srs_db",
-    embedding_function=embeddings,
-    persist_directory=str(
-        chroma_db_path
-    ),  # Where to save data locally, remove if not necessary
-)
-
-vector_store.add_documents(documents=all_splits)
+    embedding_function=MistralAIEmbeddings(model="mistral-embed"),
+    persist_directory=str(root_dir / "rag_srs_chroma_db"),
+).add_documents(documents=all_splits)
