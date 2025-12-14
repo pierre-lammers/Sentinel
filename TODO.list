@@ -1,0 +1,7 @@
+- améliorer le rag
+- structure output (json for dataset item)
+- make unitaire tests for pipeline and set the api key in github action
+- ajouter des nouveaux evaluators
+- ajouter des nouveaux dataset items
+- prompts opti on langfuse + syncro with codebase
+- ajouter le dataset dans l'analyse

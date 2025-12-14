@@ -12,10 +12,18 @@ see documentation for your OS : https://docs.astral.sh/uv/getting-started/instal
 uv sync
 ```
 
-## Create the Chroma vector database
+## Setup
+
+### Create the Chroma vector database
 
 ```bash
 make rag
+```
+
+### Setup test dataset
+
+```bash
+make setup_dataset
 ```
 
 ## Langfuse

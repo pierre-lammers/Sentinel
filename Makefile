@@ -1,4 +1,4 @@
-.PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests rag codespell
+.PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests rag setup_dataset codespell
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -27,6 +27,9 @@ extended_tests:
 
 rag:
 	python src/agent/index.py
+
+setup_dataset:
+	python tests/setup_dataset.py
 
 ######################
 # LINTING AND FORMATTING
@@ -75,4 +78,5 @@ help:
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'
 	@echo 'test_watch                   - run unit tests in watch mode'
 	@echo 'rag                          - create vector store from SRS PDF'
+	@echo 'setup_dataset                - setup test dataset'
 
