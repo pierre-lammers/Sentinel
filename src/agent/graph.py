@@ -115,8 +115,9 @@ async def retrieve_requirement(
 ) -> dict[str, Any]:
     """Retrieve requirement description via RAG."""
     try:
+        context = runtime.context or Context()
         docs = await get_vector_store().asimilarity_search(
-            f"Requirement {state.req_name}", k=runtime.context.rag_top_k
+            f"Requirement {state.req_name}", k=context.rag_top_k
         )
         if not docs:
             return {
@@ -135,9 +136,10 @@ async def generate_test_cases(
         return {}
 
     try:
+        context = runtime.context or Context()
         client = get_mistral_client()
         response = await client.chat.parse_async(
-            model=runtime.context.llm1_model,
+            model=context.llm1_model,
             messages=[
                 SystemMessage(
                     content="""You are a software testing expert.
@@ -162,7 +164,7 @@ Description:
 {state.requirement_description}"""
                 ),
             ],
-            temperature=runtime.context.temperature,
+            temperature=context.temperature,
             response_format=TestCaseList,
         )
 
@@ -212,9 +214,10 @@ async def analyze_test_scenario(
         return {}
 
     try:
+        context = runtime.context or Context()
         client = get_mistral_client()
         response = await client.chat.parse_async(
-            model=runtime.context.llm2_model,
+            model=context.llm2_model,
             messages=[
                 SystemMessage(
                     content="""You are a test analysis expert.
@@ -237,7 +240,7 @@ Scenario XML:
 ```"""
                 ),
             ],
-            temperature=runtime.context.temperature,
+            temperature=context.temperature,
             response_format=TestCaseAnalysis,
         )
 
