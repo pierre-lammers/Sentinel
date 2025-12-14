@@ -1,0 +1,4 @@
+{
+  "req_name": "SKYRADAR-DMAN-048",
+  "requirement_description": "SKYRADAR shall generate departure sequence slot violation alerts for tracks if ALL of the following conditions are met:\n• The DMAN (Departure Manager) system status is equal to OPERATIONAL, and\n• The track has an assigned Target Take-Off Time (TTOT) with departure sequence position allocated by DMAN, and\n• The track is in DEPARTURE_GROUND or DEPARTURE_TAXI flight phase with valid ground position data, and\n• The calculated actual take-off time prediction exceeds the assigned TTOT by more than CSP: DMAN_SLOT_TOLERANCE (typically +/- 5 minutes), and\n• The departure runway assigned to the track has active DMAN sequencing enabled with current departure demand exceeding VSP: DMAN_ACTIVATION_THRESHOLD (typically 8 departures per hour), and\n• The track departure route or initial departure fix matches one of the DMAN managed flow constraint points defined in CSP: DMAN_REGULATED_ROUTES."
+}

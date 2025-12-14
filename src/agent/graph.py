@@ -14,7 +14,7 @@ from mistralai.models import SystemMessage, UserMessage
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
-from agent.utils import find_scenario_files, get_mistral_client, get_vector_store
+from agent.utils import find_scenario_files, get_mistral_client
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
@@ -77,7 +77,7 @@ class Context:
 
     llm1_model: str = "codestral-2501"
     llm2_model: str = "codestral-2501"
-    rag_top_k: int = 1
+    rag_top_k: int = 2
     temperature: float = 0.0
 
 
@@ -110,22 +110,38 @@ async def load_scenarios(state: State, runtime: Runtime[Context]) -> dict[str, A
     return {"scenario_paths": paths}
 
 
-async def retrieve_requirement(
+async def retrieve_requirement_node(
     state: State, runtime: Runtime[Context]
 ) -> dict[str, Any]:
-    """Retrieve requirement description via RAG."""
-    try:
-        context = runtime.context or Context()
-        docs = await get_vector_store().asimilarity_search(
-            f"Requirement {state.req_name}", k=context.rag_top_k
-        )
-        if not docs:
-            return {
-                "errors": [*state.errors, f"No document found for {state.req_name}"]
-            }
-        return {"requirement_description": docs[0].page_content}
-    except Exception as e:
-        return {"errors": [*state.errors, f"RAG error: {e}"]}
+    """Graph node wrapper for RAG retrieval.
+
+    Adapts graph State/Context to RAG module's types.
+    """
+    from agent.rag import RAGContext, RAGState
+    from agent.rag import retrieve_requirement as rag_retrieve
+
+    context = runtime.context or Context()
+
+    # Create RAG-specific state and context
+    rag_state = RAGState(
+        req_name=state.req_name,
+        errors=state.errors,
+    )
+    rag_context = RAGContext(
+        llm_model=context.llm1_model,
+        rag_top_k=context.rag_top_k,
+        temperature=context.temperature,
+    )
+
+    # Create runtime with RAG context
+    class RAGRuntime:
+        def __init__(self, ctx: RAGContext) -> None:
+            self.context = ctx
+
+    rag_runtime = RAGRuntime(rag_context)
+
+    # Call RAG retrieval
+    return await rag_retrieve(rag_state, rag_runtime)  # type: ignore[arg-type]
 
 
 async def generate_test_cases(
@@ -313,7 +329,7 @@ def has_more_scenarios(state: State) -> str:
 graph = (
     StateGraph(State, context_schema=Context)
     .add_node("load_scenarios", load_scenarios)
-    .add_node("retrieve_requirement", retrieve_requirement)
+    .add_node("retrieve_requirement", retrieve_requirement_node)
     .add_node("generate_test_cases", generate_test_cases)
     .add_node("load_current_scenario", load_current_scenario)
     .add_node("analyze_test_scenario", analyze_test_scenario)

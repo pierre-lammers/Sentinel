@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_mistralai import MistralAIEmbeddings
 from mistralai import Mistral
 
 DATASET_PATH = Path(__file__).parent.parent.parent / "dataset"
@@ -14,12 +14,12 @@ DATASET_PATH = Path(__file__).parent.parent.parent / "dataset"
 
 def get_vector_store() -> Chroma:
     """Return the Chroma vector store."""
+    root_dir = Path(__file__).parent.parent.parent
+    chroma_db_path = root_dir / "rag_srs_chroma_db"
     return Chroma(
         collection_name="srs_db",
-        embedding_function=GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001"
-        ),
-        persist_directory="./rag_srs_chroma_db",
+        embedding_function=MistralAIEmbeddings(model="mistral-embed"),
+        persist_directory=str(chroma_db_path),
     )
 
 

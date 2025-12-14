@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain_community.document_loaders.parsers import TesseractBlobParser
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_mistralai import MistralAIEmbeddings
 from langchain_pymupdf4llm import PyMuPDF4LLMLoader  # type: ignore[import-untyped]
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -31,8 +31,8 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 all_splits = text_splitter.split_documents(docs)
 
-embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/gemini-embedding-001",
+embeddings = MistralAIEmbeddings(
+    model="mistral-embed",
 )
 
 chroma_db_path = root_dir / "rag_srs_chroma_db"
