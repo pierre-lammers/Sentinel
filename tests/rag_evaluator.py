@@ -78,24 +78,33 @@ def requirement_retrieval_evaluator(
 Compare the retrieved requirement against the expected requirement and assess:
 1. Completeness: Does the retrieved requirement contain all key information from the expected requirement?
 2. Accuracy: Is the information in the retrieved requirement correct and matches the expected requirement?
-3. Relevance: Does the retrieved requirement focus on the correct requirement without extraneous information?
-4. Precision: Is the retrieved requirement specific and detailed enough?
+3. Content Match: Is the expected requirement text fully present in the retrieved requirement?
+4. Precision: Is the core requirement specification accurate and detailed?
+
+IMPORTANT: Additional metadata such as traceability headers (SSS references, derived status, verification methods),
+requirement IDs, or formatting separators (===) should NOT negatively impact the score if the expected requirement
+text is fully contained within the retrieved requirement. These are valuable contextual information from the source
+document and indicate successful extraction.
 </evaluation_criteria>
 
 <scoring_rule>
 Score between 1 and 10:
-- 10: Perfect match - all information present and accurate
-- 8-9: Excellent - minor missing details or slight rewording
+- 10: Perfect match - all expected information present and accurate, with or without additional metadata
+- 8-9: Excellent - minor missing details or slight rewording, metadata present
 - 6-7: Good - most key information present, some missing details
 - 4-5: Fair - significant missing information or some inaccuracies
 - 2-3: Poor - major missing information or significant inaccuracies
 - 1: Failure - completely wrong requirement or error
 
+CRITICAL RULE: If the expected requirement text is completely contained within the retrieved requirement
+(even with additional headers, metadata, or separators), the score should be 10/10. Additional context
+from the source document is beneficial, not detrimental.
+
 Return your response in JSON format:
 {{
     "completeness": "Assessment of completeness (1-10)",
     "accuracy": "Assessment of accuracy (1-10)",
-    "relevance": "Assessment of relevance (1-10)",
+    "content_match": "Assessment of content match (1-10)",
     "precision": "Assessment of precision (1-10)",
     "analysis": "Detailed explanation of your evaluation",
     "score": final_score_1_to_10
@@ -158,13 +167,13 @@ Return your response in JSON format:
         analysis = result.get("analysis", "")
         completeness = result.get("completeness", "N/A")
         accuracy = result.get("accuracy", "N/A")
-        relevance = result.get("relevance", "N/A")
+        content_match = result.get("content_match", "N/A")
         precision = result.get("precision", "N/A")
 
         comment = f"""Quality Assessment:
 - Completeness: {completeness}
 - Accuracy: {accuracy}
-- Relevance: {relevance}
+- Content Match: {content_match}
 - Precision: {precision}
 
 {analysis}"""

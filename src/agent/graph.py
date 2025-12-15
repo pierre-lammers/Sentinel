@@ -111,37 +111,23 @@ async def load_scenarios(state: State, runtime: Runtime[Context]) -> dict[str, A
 
 
 async def retrieve_requirement_node(
-    state: State, runtime: Runtime[Context]
+    state: State,
+    runtime: Runtime[Context],  # noqa: ARG001
 ) -> dict[str, Any]:
-    """Graph node wrapper for RAG retrieval.
+    """Graph node wrapper for regex-based requirement retrieval.
 
-    Adapts graph State/Context to RAG module's types.
+    Adapts graph State to regex extraction module's types.
     """
-    from agent.rag import RAGContext, RAGState
-    from agent.rag import retrieve_requirement as rag_retrieve
+    from agent.regex_extract import RegexState, retrieve_requirement_regex
 
-    context = runtime.context or Context()
-
-    # Create RAG-specific state and context
-    rag_state = RAGState(
+    # Create regex-specific state
+    regex_state = RegexState(
         req_name=state.req_name,
         errors=state.errors,
     )
-    rag_context = RAGContext(
-        llm_model=context.llm1_model,
-        rag_top_k=context.rag_top_k,
-        temperature=context.temperature,
-    )
 
-    # Create runtime with RAG context
-    class RAGRuntime:
-        def __init__(self, ctx: RAGContext) -> None:
-            self.context = ctx
-
-    rag_runtime = RAGRuntime(rag_context)
-
-    # Call RAG retrieval
-    return await rag_retrieve(rag_state, rag_runtime)  # type: ignore[arg-type]
+    # Call regex retrieval
+    return await retrieve_requirement_regex(regex_state)
 
 
 async def generate_test_cases(

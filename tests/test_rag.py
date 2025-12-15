@@ -1,8 +1,13 @@
-"""Experiment for RAG requirement retrieval evaluation using Langfuse datasets."""
+"""Experiment for requirement retrieval evaluation using Langfuse datasets.
+
+Usage:
+    python tests/test_rag.py rag    # Use semantic RAG retrieval
+    python tests/test_rag.py regex  # Use regex-based extraction
+"""
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from langfuse import Langfuse
 
@@ -16,60 +21,63 @@ from agent.rag import (  # noqa: E402
     RAGState,
     retrieve_requirement,
 )
+from agent.regex_extract import (  # noqa: E402
+    RegexState,
+    retrieve_requirement_regex,
+)
 from tests.rag_evaluator import requirement_retrieval_evaluator  # noqa: E402
 
 
-def run_rag_experiment() -> None:
-    """Run RAG retrieval experiment using Langfuse dataset."""
-    # Initialize Langfuse client
+def run_experiment(method: Literal["rag", "regex"] = "rag") -> None:
+    """Run requirement retrieval experiment using Langfuse dataset.
+
+    Args:
+        method: Retrieval method - "rag" for semantic search, "regex" for pattern matching
+    """
     langfuse = Langfuse()
 
-    # Define task function
     async def rag_task(*, item: Any) -> Any:
-        """Task function that runs RAG retrieval for a requirement.
-
-        Args:
-            item: DatasetItemClient with input from the dataset
-
-        Returns:
-            Dictionary containing the RAG retrieval output
-        """
-        # Get input from dataset item
-        input_req_name = item.input["req_name"]
-
-        # Create RAG state
-        rag_state = RAGState(req_name=input_req_name)
-
-        # Create runtime with default RAG context
-        rag_runtime = RAGRuntime(RAGContext())
-
-        # Run RAG retrieval
-        result = await retrieve_requirement(rag_state, rag_runtime)
-
-        # Return result as dictionary
+        """RAG retrieval task."""
+        req_name = item.input["req_name"]
+        state = RAGState(req_name=req_name)
+        runtime = RAGRuntime(RAGContext())
+        result = await retrieve_requirement(state, runtime)
         return {
-            "req_name": input_req_name,
+            "req_name": req_name,
             "requirement_description": result.get("requirement_description", ""),
             "errors": result.get("errors", []),
         }
 
-    # Get dataset from Langfuse
-    dataset = langfuse.get_dataset("rag-requirement-retrieval")
+    async def regex_task(*, item: Any) -> Any:
+        """Regex extraction task."""
+        req_name = item.input["req_name"]
+        state = RegexState(req_name=req_name)
+        result = await retrieve_requirement_regex(state)
+        return {
+            "req_name": req_name,
+            "requirement_description": result.get("requirement_description", ""),
+            "errors": result.get("errors", []),
+        }
 
-    # Run experiment on entire dataset with evaluator
-    experiment_result = dataset.run_experiment(
-        name="RAG Requirement Retrieval Test",
-        description="Evaluation of RAG requirement retrieval quality",
-        task=rag_task,  # type: ignore[arg-type]
+    task = regex_task if method == "regex" else rag_task
+    name = f"{'Regex' if method == 'regex' else 'RAG'} Requirement Retrieval"
+
+    dataset = langfuse.get_dataset("rag-requirement-retrieval")
+    result = dataset.run_experiment(
+        name=name,
+        description=f"Evaluation of {method.upper()} requirement retrieval",
+        task=task,  # type: ignore[arg-type]
         evaluators=[requirement_retrieval_evaluator],
     )
 
-    # Display results
     print(f"\n{'=' * 80}")
-    print("RAG Retrieval Experiment Results")
+    print(f"{name} Results")
     print(f"{'=' * 80}")
-    print(experiment_result.format())
+    print(result.format())
 
 
 if __name__ == "__main__":
-    run_rag_experiment()
+    method: Literal["rag", "regex"] = "rag"
+    if len(sys.argv) > 1 and sys.argv[1] in ("rag", "regex"):
+        method = sys.argv[1]  # type: ignore[assignment]
+    run_experiment(method)
