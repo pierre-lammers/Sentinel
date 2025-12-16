@@ -5,6 +5,7 @@
 - prompts opti on langfuse + syncro with codebase
 - ajouter le dataset dans l'analyse
 - chercher dans la SRS des termes spécifiques du req
+- separate tests cases generation from the main graph to evaluate it
 
 
 low prio:

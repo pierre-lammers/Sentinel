@@ -67,7 +67,7 @@ def test_case_coverage_evaluator(
     )
 
     # Create evaluation prompt
-    evaluation_prompt = f"""You are evaluating test case coverage. Compare the generated output against reference test cases.
+    evaluation_prompt = f"""You are evaluating test case status accuracy. Compare the generated output against reference test cases.
 
 <generated_output>
 {output_str}
@@ -78,26 +78,43 @@ def test_case_coverage_evaluator(
 </reference_test_cases>
 
 <evaluation_criteria>
-Count how many test cases from reference_test_cases are present in generated_output.
+1. Identify test cases that are common between reference_test_cases and generated_output
+2. For each common test case, compare the "present" status field
+3. Count how many common test cases have identical "present" status
 
-A test case is considered "present" if:
+A test case is considered "common" if:
 - The same test scenario is described (exact wording not required)
 - The same condition being tested is covered
 - Equivalent formulations are acceptable (e.g., "NTZ inactive" = "NTZ area is not active")
 
-Calculate the percentage: (FOUND / total reference tests) × 100
+Calculate the percentage: (test cases with matching present status / TOTAL reference test cases) × 100
+
+IMPORTANT: The denominator is the TOTAL number of reference test cases, NOT the number of common test cases.
+Example: If there are 15 reference test cases, 8 are found in generated output, and 6 have matching present status, the percentage is 6/15 = 40%
 </evaluation_criteria>
 
 <instructions>
 1. List all test cases from reference_test_cases
-2. For each reference test case, check if it exists in generated_output (FOUND or MISSING)
-3. Calculate the percentage of FOUND test cases
-4. Apply the scoring rule below
+2. For each reference test case, check if it exists in generated_output (FOUND or NOT FOUND)
+3. For FOUND test cases (common test cases), compare the "present" status
+4. Mark each common test case as MATCH (same present status) or MISMATCH (different present status)
+5. Calculate the percentage of MATCH test cases among common test cases
+6. Apply the scoring rule below
 </instructions>
 
 <scoring_rule>
-First list each reference test case and mark it as FOUND or MISSING. Then calculate the percentage of found test cases and explain your scoring.
-Score between 1 and 10 based on percentage of reference tests found:
+First list each reference test case and mark it as:
+- NOT FOUND (not in generated output)
+- MATCH (found in generated output with same "present" status)
+- MISMATCH (found in generated output but different "present" status)
+
+Then calculate:
+- Total reference test cases (all test cases in reference)
+- Common test cases (MATCH + MISMATCH)
+- Matching test cases (only MATCH)
+- Percentage = (MATCH / TOTAL reference test cases) × 100
+
+Score between 1 and 10 based on percentage of matching present status:
 - 0-9% = 1
 - 10-19% = 2
 - 20-29% = 3
@@ -111,9 +128,10 @@ Score between 1 and 10 based on percentage of reference tests found:
 
 Return your response in JSON format:
 {{
-    "analysis": "Your detailed analysis of each test case",
-    "found_count": number_of_found_test_cases,
-    "total_count": total_reference_test_cases,
+    "analysis": "Your detailed analysis of each test case with NOT FOUND/MATCH/MISMATCH status",
+    "common_count": number_of_common_test_cases,
+    "matching_count": number_of_test_cases_with_same_present_status,
+    "total_reference_count": total_reference_test_cases,
     "percentage": calculated_percentage,
     "score": final_score_1_to_10
 }}
@@ -144,12 +162,14 @@ Return your response in JSON format:
 
         score = result.get("score", 0)
         percentage = result.get("percentage", 0)
-        found_count = result.get("found_count", 0)
-        total_count = result.get("total_count", 0)
+        common_count = result.get("common_count", 0)
+        matching_count = result.get("matching_count", 0)
+        total_reference_count = result.get("total_reference_count", 0)
         analysis = result.get("analysis", "")
 
         comment = (
-            f"Coverage: {found_count}/{total_count} ({percentage:.1f}%)\n{analysis}"
+            f"Status Match: {matching_count}/{total_reference_count} "
+            f"({percentage:.1f}%) - Common: {common_count}\n{analysis}"
         )
 
         return Evaluation(

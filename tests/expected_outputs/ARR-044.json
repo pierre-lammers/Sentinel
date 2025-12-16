@@ -1,5 +1,5 @@
 {
-  "req_name": "ARR-044",
+  "req_name": "SKYRADAR-ARR-044",
   "scenario_paths": [
     "dataset/TS_ARR-044/test_01/scenario_SKYRADAR-ARR-044-01.xml",
     "dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-02.xml"
