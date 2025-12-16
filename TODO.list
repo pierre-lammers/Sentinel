@@ -1,7 +1,16 @@
-- améliorer le rag
 - structure output (json for dataset item)
 - make unitaire tests for pipeline and set the api key in github action
 - ajouter des nouveaux evaluators
 - ajouter des nouveaux dataset items
 - prompts opti on langfuse + syncro with codebase
 - ajouter le dataset dans l'analyse
+- chercher dans la SRS des termes spécifiques du req
+
+
+low prio:
+- auto detect the format of req id 
+(compliqué en full auto car par exemple req SSS comment peut on savoir que ce n'est pas ça le req SRS)
+
+done:
+- améliorer le rag (use regex)
+- srs avec images et tableau
