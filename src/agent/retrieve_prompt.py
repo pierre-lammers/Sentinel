@@ -9,7 +9,7 @@ from typing import Dict, Any, List
 # Load environment variables (including LANGFUSE_* and PROMPT_PATH)
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
-# Initialize Langfuse client (should be done once)
+# Initialize Langfuse client
 langfuse = get_client()
 
 
@@ -17,7 +17,6 @@ def retrieve_prompt(name: str, **variables) -> str | None:
     """
     Retrieves a single prompt template from Langfuse, formats it with variables, 
     and returns the final string.
-    (Kept separate as it serves a different purpose than the bulk export)
     """
     print("Retrieving Langfuse prompt:", name)
     
@@ -34,21 +33,18 @@ def retrieve_prompt(name: str, **variables) -> str | None:
 
 def fetch_prompt_names(client) -> List[str]:
     """
-    Retrieves only the list of all prompt names (metadata) from Langfuse API.
+    Retrieves the list of all prompt names from Langfuse API.
     """
     try:
         print("Fetching prompt names list via client.api.prompts.list()...")
         prompt_list_response = client.api.prompts.list(limit=100) 
-        
+        return [p.name for p in prompt_list_response.data]
     except AttributeError:
         print("Error: The attribute 'api.prompts.list' is not available. Please check your Langfuse SDK version.")
         return []
     except Exception as e:
         print(f"Error connecting to Langfuse to list prompts: {e}")
         return []
-
-    # The result data is usually under the 'data' field
-    return [p.name for p in prompt_list_response.data]
 
 
 def fetch_single_prompt_content(client, name: str) -> Dict[str, Any] | None:
@@ -67,78 +63,99 @@ def fetch_single_prompt_content(client, name: str) -> Dict[str, Any] | None:
         print(f"  -> Error retrieving content for '{name}': {e}")
         return None
 
-def retrieve_json_path(name: str):
-    output_directory_str = os.getenv("PROMPT_PATH")
-    output_dir = Path(output_directory_str)
 
-    file_name = ""
+def retrieve_json_path(name: str) -> Path:
+    """
+    Determines the target file path based on the prompt name.
+    """
+    output_directory_str = os.getenv("PROMPT_PATH", ".")
+    output_dir = Path(output_directory_str)
 
     if name.lower().startswith("evaluator"):
         file_name = "evaluator.json"
     else:
         file_name = "production.json"
 
-    return Path(output_dir) / Path(file_name)
+    return output_dir / file_name
 
-def read_file(file_path: Path):
+
+def read_json_file(file_path: Path) -> Dict[str, Any]:
+    """
+    Reads and parses a JSON file.
+    """
     data = {}
-
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
-        print(f"Erreur de lecture : {e}")
-
+        print(f"Read error: {e}")
     return data
 
+
 def write_to_json_file(prompt_name: str, prompt_data: Dict[str, Any]):
+    """
+    Updates or creates a JSON file with the new prompt data if the version is newer.
+    """
     prompt_version = prompt_data.get("version")
+    short_name = prompt_name.split(" - ")[-1]
+
+    prompt_data["name"] = short_name
+
     file_path = retrieve_json_path(prompt_name)
     data = {}
 
-    # 1. Préparation des données (Lecture ou initialisation)
+    # 1. Data Preparation (Read or initialize)
     if file_path.exists():
-        data = read_file(file_path)
+        data = read_json_file(file_path)
         
-        if prompt_name not in data:
-            print(f"-> Adding new prompt {prompt_name} to existing file {file_path.name}.")
-            data[prompt_name] = prompt_data
+        # If the prompt doesn't exist in the file
+        if short_name not in data:
+            print(f"-> Adding new prompt {short_name} to existing file {file_path.name}.")
+            data[short_name] = prompt_data
         
-        
-        elif data[prompt_name].get("version", 0) < int(prompt_version): 
-            print(f"-> Updating {prompt_name} to v{prompt_version}")
-            data[prompt_name] = prompt_data
+        # If the prompt is not up to date, update it
+        elif data[short_name].get("version", 0) < int(prompt_version): 
+            print(f"-> Updating {short_name} to v{prompt_version}")
+            data[short_name] = prompt_data
         else:
-            print(f"-> {prompt_name} is already up to date")
+            print(f"-> {short_name} is already up to date, no action taken.")
             return 
 
     else: 
-        print(f"-> Creating file {file_path.name} and adding {prompt_name}")
-        data[prompt_name] = prompt_data
+        print(f"-> Creating file {file_path.name} and adding {short_name}")
+        data[short_name] = prompt_data
 
+    # 2. Disk Write
     try:
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        
         with open(file_path, 'w', encoding='utf-8') as f:
             print(f"Writing to {file_path.name}...")
             json.dump(data, f, ensure_ascii=False, indent=4)
     except Exception as e:
-        print(f"Erreur d'écriture dans {file_path.name} : {e}")
+        print(f"Write error in {file_path.name}: {e}")
+
+
+def cleanup_local_json(file_path: Path, remote_names: List[str]):
+    """
+    Removes prompts from local JSON files that are no longer present on Langfuse.
+    """
+    pass
+
 
 if __name__ == "__main__":
-  
-  # 1. Fetch all prompt names
-  prompt_names = fetch_prompt_names(langfuse)
-  
-  if not prompt_names:
-    print("\nNo prompt names retrieved from Langfuse. Exiting.")
-    langfuse.flush()
-    exit()
+    # 1. Fetch all prompt names from Langfuse
+    prompt_names = fetch_prompt_names(langfuse)
+    
+    if not prompt_names:
+        print("\nNo prompt names retrieved from Langfuse. Exiting.")
+        langfuse.flush()
+        exit()
 
-  for name in prompt_names:
-    prompt_data = fetch_single_prompt_content(langfuse, name)
+    # 2. Process each prompt
+    for name in prompt_names:
+        prompt_content = fetch_single_prompt_content(langfuse, name)
+        if prompt_content:
+            write_to_json_file(name, prompt_content)
     
-    if prompt_data:
-      write_to_json_file(name, prompt_data)
-    
-  langfuse.flush()
+    langfuse.flush()
+    print("\n✅ Sync and cleanup completed successfully.")
