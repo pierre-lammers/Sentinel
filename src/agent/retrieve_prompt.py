@@ -67,11 +67,10 @@ def fetch_single_prompt_content(client, name: str) -> Dict[str, Any] | None:
         print(f"  -> Error retrieving content for '{name}': {e}")
         return None
 
-
-def write_to_json_file(name: str, prompt_data: Dict[str, any]):
+def retrieve_json_path(name: str):
     output_directory_str = os.getenv("PROMPT_PATH")
     output_dir = Path(output_directory_str)
-    
+
     file_name = ""
 
     if name.lower().startswith("evaluator"):
@@ -79,28 +78,67 @@ def write_to_json_file(name: str, prompt_data: Dict[str, any]):
     else:
         file_name = "production.json"
 
-    filepath = Path(output_dir) / Path(file_name)
+    return Path(output_dir) / Path(file_name)
+
+def read_file(file_path: Path):
+    data = {}
 
     try:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(prompt_data, f, ensure_ascii=False, indent=4)
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
     except Exception as e:
-        print(f"  ❌ ERROR writing to file {filepath}: {e}")
+        print(f"Erreur de lecture : {e}")
+
+    return data
+
+def write_to_json_file(prompt_name: str, prompt_data: Dict[str, Any]):
+    prompt_version = prompt_data.get("version")
+    file_path = retrieve_json_path(prompt_name)
+    data = {}
+
+    # 1. Préparation des données (Lecture ou initialisation)
+    if file_path.exists():
+        data = read_file(file_path)
+        
+        if prompt_name not in data:
+            print(f"-> Adding new prompt {prompt_name} to existing file {file_path.name}.")
+            data[prompt_name] = prompt_data
+        
+        
+        elif data[prompt_name].get("version", 0) < int(prompt_version): 
+            print(f"-> Updating {prompt_name} to v{prompt_version}")
+            data[prompt_name] = prompt_data
+        else:
+            print(f"-> {prompt_name} is already up to date")
+            return 
+
+    else: 
+        print(f"-> Creating file {file_path.name} and adding {prompt_name}")
+        data[prompt_name] = prompt_data
+
+    try:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            print(f"Writing to {file_path.name}...")
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"Erreur d'écriture dans {file_path.name} : {e}")
 
 if __name__ == "__main__":
-    
-    # 1. Fetch all prompt names
-    prompt_names = fetch_prompt_names(langfuse)
-    
-    if not prompt_names:
-        print("\nNo prompt names retrieved from Langfuse. Exiting.")
-        langfuse.flush()
-        exit()
-
-    for name in prompt_names:
-        prompt_data = fetch_single_prompt_content(langfuse, name)
-        
-        if prompt_data:
-            write_to_json_file(name, prompt_data)
-        
+  
+  # 1. Fetch all prompt names
+  prompt_names = fetch_prompt_names(langfuse)
+  
+  if not prompt_names:
+    print("\nNo prompt names retrieved from Langfuse. Exiting.")
     langfuse.flush()
+    exit()
+
+  for name in prompt_names:
+    prompt_data = fetch_single_prompt_content(langfuse, name)
+    
+    if prompt_data:
+      write_to_json_file(name, prompt_data)
+    
+  langfuse.flush()
