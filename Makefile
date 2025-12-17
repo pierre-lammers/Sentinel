@@ -21,6 +21,9 @@ test_profile:
 extended_tests:
 	python -m pytest --only-extended $(TEST_FILE)
 
+prompt: 
+	python src/agent/retrieve_prompt.py
+
 ######################
 # RAG SETUP
 ######################

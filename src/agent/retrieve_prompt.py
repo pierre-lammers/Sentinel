@@ -151,6 +151,8 @@ if __name__ == "__main__":
         langfuse.flush()
         exit()
 
+    print(f"\nFound {len(prompt_names)} prompt(s) on Langfuse.")
+
     # 2. Process each prompt
     for name in prompt_names:
         prompt_content = fetch_single_prompt_content(langfuse, name)
