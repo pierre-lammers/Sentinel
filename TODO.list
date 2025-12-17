@@ -2,7 +2,7 @@
 - make unitaire tests for pipeline and set the api key in github action
 - ajouter des nouveaux evaluators
 - ajouter des nouveaux dataset items
-- prompts opti on langfuse + syncro with codebase
+- prompts opti on langfuse + syncro with codebase ==> more generic or make prompt specific auto
 - ajouter le dataset dans l'analyse
 - chercher dans la SRS des termes spécifiques du req
 - separate tests cases generation from the main graph to evaluate it
@@ -15,3 +15,10 @@ low prio:
 done:
 - améliorer le rag (use regex)
 - srs avec images et tableau
+
+problems:
+- a given req don't give you always the way to test 
+(for instance a req talks about eligibility conditions and another said
+ that when all conditions are met you raised an alert => you need to rag all srs to know how to test)
+- a given req could said you need OPERATIONAL status but you don't know with the SRS the others status 
+so you can't test all the transitions

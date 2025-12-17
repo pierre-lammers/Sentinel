@@ -28,7 +28,7 @@ class TestCase(TypedDict):
 
     id: str
     description: str
-    present: bool
+    present: bool | str  # True, False, or "false_positive"
 
 
 class ScenarioResult(TypedDict):
@@ -57,7 +57,9 @@ class AnalyzedTestCase(BaseModel):
 
     id: str
     description: str
-    present: bool = Field(description="True if covered by the XML scenario")
+    present: bool | str = Field(
+        description='True if covered, False if not covered, "false_positive" if scenario claims to test but XML data is insufficient'
+    )
 
 
 class TestCaseAnalysis(BaseModel):
@@ -225,7 +227,10 @@ async def analyze_test_scenario(
                     content="""You are a test analysis expert.
 Analyze an XML scenario and determine which test cases are covered.
 
-Set present=true if the test case IS verified by the scenario, false otherwise.
+Set present value:
+- true: if the test case IS verified by the scenario with proper XML data
+- false: if the test case is NOT covered by the scenario
+- "false_positive": if the scenario CLAIMS to test something but the XML lacks necessary data/tags to actually verify it
 
 Return ONLY JSON: {"test_cases": [{"id": "TC-001", "description": "...", "present": true}]}"""
                 ),

@@ -457,7 +457,7 @@ SKYRADAR shall generate RVSM (Reduced Vertical Separation Minimum) Non-Approval 
 
 **Requirement Statement:**
 
-SKYRADAR shall automatically adjust arrival sequence positions for tracks if ALL of the following conditions are met:
+SKYRADAR shall generate an alert for arrival sequence optimization issues when ONE OR MORE of the following conditions are NOT satisfied:
 
 | Condition # | Condition Description | Parameter Type |
 |-------------|----------------------|----------------|
@@ -468,7 +468,11 @@ SKYRADAR shall automatically adjust arrival sequence positions for tracks if ALL
 | 5 | The track has an assigned arrival runway with active AMAN sequencing enabled | Configuration |
 | 6 | The potential sequence position change would not violate minimum time-based separation with preceding or following traffic (TBS_MIN_SEPARATION_TIME) | VSP/Safety Check |
 
-**Rationale:** Automated arrival sequencing with time-based separation for traffic flow optimization improves runway throughput and reduces delay while maintaining safety separation.
+**Alert Logic:**
+- **When ALL conditions are satisfied:** No alert is generated. SKYRADAR automatically adjusts arrival sequence positions for optimal flow management.
+- **When ONE OR MORE conditions are NOT satisfied:** An alert is generated to inform controllers that automatic arrival sequencing cannot be applied, requiring manual intervention.
+
+**Rationale:** Automated arrival sequencing with time-based separation for traffic flow optimization improves runway throughput and reduces delay while maintaining safety separation. Alerts notify controllers when conditions prevent automatic optimization, ensuring awareness of manual intervention requirements.
 
 **SDS Rules Reference:** HLR_18 [cmats_snp] Partial derivation shall be avoided
 

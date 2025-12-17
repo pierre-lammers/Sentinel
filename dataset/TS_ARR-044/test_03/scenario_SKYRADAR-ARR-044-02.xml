@@ -60,10 +60,10 @@ All conditions except C2 are met for automatic sequence adjustment."
 	</TrackUpdates>
 
 	<TestResult resultTimeInMilliSec="6000"
-	            resultDescription="Baseline: Track in CRUISE phase, sequence adjustment should NOT be generated."
+	            resultDescription="Baseline: Track in CRUISE phase (condition 2 NOT satisfied), alert SHOULD be generated for manual intervention."
 	            nextActionComment="Track transitions to ARRIVAL phase at time 10000 with valid time-to-threshold."
-	            nextActionDescription="With track in ARRIVAL phase and valid time-to-threshold prediction, sequence adjustment alert should be generated.">
-		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	            nextActionDescription="With track in ARRIVAL phase and valid time-to-threshold prediction (all conditions satisfied), NO alert should be generated (automatic sequence adjustment occurs).">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true"/>
 	</TestResult>
 
 	<!-- TRANSITION: Track enters ARRIVAL phase with valid time-to-threshold -->
@@ -82,12 +82,10 @@ All conditions except C2 are met for automatic sequence adjustment."
 	</TrackUpdates>
 
 	<TestResult resultTimeInMilliSec="11000"
-	            resultDescription="Track in ARRIVAL phase with valid time-to-threshold, sequence adjustment SHOULD be generated."
+	            resultDescription="Track in ARRIVAL phase with valid time-to-threshold (all conditions satisfied), NO alert should be generated (automatic sequence adjustment occurs)."
 	            nextActionComment="Time-to-threshold prediction becomes invalid at time 15000."
-	            nextActionDescription="With invalid time-to-threshold prediction, sequence adjustment alert should NOT be generated.">
-		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true">
-			<AMANAlert currentPosition="6" newPosition="4" delaySeconds="170"/>
-		</Alerts>
+	            nextActionDescription="With invalid time-to-threshold prediction (condition 2 NOT satisfied), alert SHOULD be generated for manual intervention.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
 	</TestResult>
 
 	<!-- TRANSITION: Time-to-threshold becomes invalid -->
@@ -106,8 +104,8 @@ All conditions except C2 are met for automatic sequence adjustment."
 	</TrackUpdates>
 
 	<TestResult resultTimeInMilliSec="16000"
-	            resultDescription="Track in ARRIVAL phase but time-to-threshold invalid, sequence adjustment should NOT be generated.">
-		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	            resultDescription="Track in ARRIVAL phase but time-to-threshold invalid (condition 2 NOT satisfied), alert SHOULD be generated for manual intervention.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true"/>
 	</TestResult>
 
 </UpdateRoot>

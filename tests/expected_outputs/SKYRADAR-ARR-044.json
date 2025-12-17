@@ -1,0 +1,705 @@
+{
+  "req_name": "SKYRADAR-ARR-044",
+  "scenario_paths": [
+    "dataset/TS_ARR-044/test_01/scenario_SKYRADAR-ARR-044-00.xml",
+    "dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-01.xml",
+    "dataset/TS_ARR-044/test_03/scenario_SKYRADAR-ARR-044-02.xml",
+    "dataset/TS_ARR-044/test_04/scenario_SKYRADAR-ARR-044-03.xml",
+    "dataset/TS_ARR-044/test_05/scenario_SKYRADAR-ARR-044-04.xml"
+  ],
+  "scenario_results": [
+    {
+      "scenario_name": "scenario_SKYRADAR-ARR-044-00",
+      "scenario_path": "dataset/TS_ARR-044/test_01/scenario_SKYRADAR-ARR-044-00.xml",
+      "test_cases": [
+        {
+          "id": "TC-001",
+          "description": "Nominal Case: All conditions true (AMAN=OPERATIONAL, phase=ARRIVAL, valid TTT, delay>AMAN_MIN_DELAY_THRESHOLD, runway assigned, AMAN enabled, separation OK) → alert should NOT be generated",
+          "present": true
+        },
+        {
+          "id": "TC-002",
+          "description": "Condition C1 NOT satisfied: AMAN status != OPERATIONAL (other conditions true) → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-003",
+          "description": "C1 State transition: AMAN status changes from non-OPERATIONAL to OPERATIONAL → alert SHOULD be not generated after transition",
+          "present": true
+        },
+        {
+          "id": "TC-004",
+          "description": "C1 State transition: AMAN status changes from OPERATIONAL to non-OPERATIONAL → alert SHOULD be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-005",
+          "description": "Condition C2 NOT satisfied: Track in phase != ARRIVAL, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-006",
+          "description": "Condition C2 NOT satisfied: Track in phase ARRIVAL but time-to-threshold INVALID, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-007",
+          "description": "C2 State transition: Track changes from phase non-ARRIVAL to ARRIVAL with valid TTT → alert should NOT be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-008",
+          "description": "C2 State transition: Time-to-threshold becomes INVALID during ARRIVAL phase → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-009",
+          "description": "Condition C3 NOT satisfied: Track OUTSIDE E-TMA boundary limits, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-010",
+          "description": "C3 State transition: Track ENTERS E-TMA limits → alert should NOT be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-011",
+          "description": "C3 State transition: Track LEAVES E-TMA limits → alert should be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-012",
+          "description": "Condition C4 BOUNDARY: Calculated arrival delay = EXACTLY AMAN_MIN_DELAY_THRESHOLD, other conditions true → behavior per spec (typically alert generated because condition is > not >=)",
+          "present": false
+        },
+        {
+          "id": "TC-013",
+          "description": "Condition C4 NOT satisfied: Calculated arrival delay < AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-014",
+          "description": "Condition C4 satisfied: Calculated arrival delay > AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-015",
+          "description": "C4 State transition: Arrival delay changes from < AMAN_MIN_DELAY_THRESHOLD to > AMAN_MIN_DELAY_THRESHOLD → alert should NOT be generated after delay increase",
+          "present": false
+        },
+        {
+          "id": "TC-016",
+          "description": "C4 State transition: Arrival delay changes from > AMAN_MIN_DELAY_THRESHOLD to < AMAN_MIN_DELAY_THRESHOLD → alert SHOULD be generated after delay decrease",
+          "present": false
+        },
+        {
+          "id": "TC-017",
+          "description": "Condition C5 NOT satisfied: Track HAS NO assigned arrival runway (runway not specified), other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-018",
+          "description": "Condition C5 NOT satisfied: Track has assigned runway BUT AMAN sequencing is DISABLED on that runway, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-019",
+          "description": "Condition C5 satisfied: Track has assigned runway AND AMAN sequencing ENABLED → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-020",
+          "description": "Condition C6 NOT satisfied: Sequence position change would VIOLATE minimum separation TBS_MIN_SEPARATION_TIME, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-021",
+          "description": "Condition C6 satisfied: Sequence position change RESPECTS minimum separation (> TBS_MIN_SEPARATION_TIME between aircraft), other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-022",
+          "description": "Condition C6 BOUNDARY: Position change with separation = EXACTLY TBS_MIN_SEPARATION_TIME, other conditions true → behavior per spec",
+          "present": false
+        }
+      ]
+    },
+    {
+      "scenario_name": "scenario_SKYRADAR-ARR-044-01",
+      "scenario_path": "dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-01.xml",
+      "test_cases": [
+        {
+          "id": "TC-001",
+          "description": "Nominal Case: All conditions true (AMAN=OPERATIONAL, phase=ARRIVAL, valid TTT, delay>AMAN_MIN_DELAY_THRESHOLD, runway assigned, AMAN enabled, separation OK) → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-002",
+          "description": "Condition C1 NOT satisfied: AMAN status != OPERATIONAL (other conditions true) → alert SHOULD be generated",
+          "present": true
+        },
+        {
+          "id": "TC-003",
+          "description": "C1 State transition: AMAN status changes from non-OPERATIONAL to OPERATIONAL → alert SHOULD be not generated after transition",
+          "present": true
+        },
+        {
+          "id": "TC-004",
+          "description": "C1 State transition: AMAN status changes from OPERATIONAL to non-OPERATIONAL → alert SHOULD be generated after transition",
+          "present": true
+        },
+        {
+          "id": "TC-005",
+          "description": "Condition C2 NOT satisfied: Track in phase != ARRIVAL, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-006",
+          "description": "Condition C2 NOT satisfied: Track in phase ARRIVAL but time-to-threshold INVALID, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-007",
+          "description": "C2 State transition: Track changes from phase non-ARRIVAL to ARRIVAL with valid TTT → alert should NOT be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-008",
+          "description": "C2 State transition: Time-to-threshold becomes INVALID during ARRIVAL phase → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-009",
+          "description": "Condition C3 NOT satisfied: Track OUTSIDE E-TMA boundary limits, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-010",
+          "description": "C3 State transition: Track ENTERS E-TMA limits → alert should NOT be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-011",
+          "description": "C3 State transition: Track LEAVES E-TMA limits → alert should be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-012",
+          "description": "Condition C4 BOUNDARY: Calculated arrival delay = EXACTLY AMAN_MIN_DELAY_THRESHOLD, other conditions true → behavior per spec (typically alert generated because condition is > not >=)",
+          "present": false
+        },
+        {
+          "id": "TC-013",
+          "description": "Condition C4 NOT satisfied: Calculated arrival delay < AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-014",
+          "description": "Condition C4 satisfied: Calculated arrival delay > AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-015",
+          "description": "C4 State transition: Arrival delay changes from < AMAN_MIN_DELAY_THRESHOLD to > AMAN_MIN_DELAY_THRESHOLD → alert should NOT be generated after delay increase",
+          "present": false
+        },
+        {
+          "id": "TC-016",
+          "description": "C4 State transition: Arrival delay changes from > AMAN_MIN_DELAY_THRESHOLD to < AMAN_MIN_DELAY_THRESHOLD → alert SHOULD be generated after delay decrease",
+          "present": false
+        },
+        {
+          "id": "TC-017",
+          "description": "Condition C5 NOT satisfied: Track HAS NO assigned arrival runway (runway not specified), other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-018",
+          "description": "Condition C5 NOT satisfied: Track has assigned runway BUT AMAN sequencing is DISABLED on that runway, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-019",
+          "description": "Condition C5 satisfied: Track has assigned runway AND AMAN sequencing ENABLED → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-020",
+          "description": "Condition C6 NOT satisfied: Sequence position change would VIOLATE minimum separation TBS_MIN_SEPARATION_TIME, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-021",
+          "description": "Condition C6 satisfied: Sequence position change RESPECTS minimum separation (> TBS_MIN_SEPARATION_TIME between aircraft), other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-022",
+          "description": "Condition C6 BOUNDARY: Position change with separation = EXACTLY TBS_MIN_SEPARATION_TIME, other conditions true → behavior per spec",
+          "present": false
+        }
+      ]
+    },
+    {
+      "scenario_name": "scenario_SKYRADAR-ARR-044-02",
+      "scenario_path": "dataset/TS_ARR-044/test_03/scenario_SKYRADAR-ARR-044-02.xml",
+      "test_cases": [
+        {
+          "id": "TC-001",
+          "description": "Nominal Case: All conditions true (AMAN=OPERATIONAL, phase=ARRIVAL, valid TTT, delay>AMAN_MIN_DELAY_THRESHOLD, runway assigned, AMAN enabled, separation OK) → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-002",
+          "description": "Condition C1 NOT satisfied: AMAN status != OPERATIONAL (other conditions true) → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-003",
+          "description": "C1 State transition: AMAN status changes from non-OPERATIONAL to OPERATIONAL → alert SHOULD be not generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-004",
+          "description": "C1 State transition: AMAN status changes from OPERATIONAL to non-OPERATIONAL → alert SHOULD be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-005",
+          "description": "Condition C2 NOT satisfied: Track in phase != ARRIVAL, other conditions true → alert SHOULD be generated",
+          "present": true
+        },
+        {
+          "id": "TC-006",
+          "description": "Condition C2 NOT satisfied: Track in phase ARRIVAL but time-to-threshold INVALID, other conditions true → alert SHOULD be generated",
+          "present": true
+        },
+        {
+          "id": "TC-007",
+          "description": "C2 State transition: Track changes from phase non-ARRIVAL to ARRIVAL with valid TTT → alert should NOT be generated after transition",
+          "present": true
+        },
+        {
+          "id": "TC-008",
+          "description": "C2 State transition: Time-to-threshold becomes INVALID during ARRIVAL phase → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-009",
+          "description": "Condition C3 NOT satisfied: Track OUTSIDE E-TMA boundary limits, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-010",
+          "description": "C3 State transition: Track ENTERS E-TMA limits → alert should NOT be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-011",
+          "description": "C3 State transition: Track LEAVES E-TMA limits → alert should be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-012",
+          "description": "Condition C4 BOUNDARY: Calculated arrival delay = EXACTLY AMAN_MIN_DELAY_THRESHOLD, other conditions true → behavior per spec (typically alert generated because condition is > not >=)",
+          "present": false
+        },
+        {
+          "id": "TC-013",
+          "description": "Condition C4 NOT satisfied: Calculated arrival delay < AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-014",
+          "description": "Condition C4 satisfied: Calculated arrival delay > AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-015",
+          "description": "C4 State transition: Arrival delay changes from < AMAN_MIN_DELAY_THRESHOLD to > AMAN_MIN_DELAY_THRESHOLD → alert should NOT be generated after delay increase",
+          "present": false
+        },
+        {
+          "id": "TC-016",
+          "description": "C4 State transition: Arrival delay changes from > AMAN_MIN_DELAY_THRESHOLD to < AMAN_MIN_DELAY_THRESHOLD → alert SHOULD be generated after delay decrease",
+          "present": false
+        },
+        {
+          "id": "TC-017",
+          "description": "Condition C5 NOT satisfied: Track HAS NO assigned arrival runway (runway not specified), other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-018",
+          "description": "Condition C5 NOT satisfied: Track has assigned runway BUT AMAN sequencing is DISABLED on that runway, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-019",
+          "description": "Condition C5 satisfied: Track has assigned runway AND AMAN sequencing ENABLED → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-020",
+          "description": "Condition C6 NOT satisfied: Sequence position change would VIOLATE minimum separation TBS_MIN_SEPARATION_TIME, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-021",
+          "description": "Condition C6 satisfied: Sequence position change RESPECTS minimum separation (> TBS_MIN_SEPARATION_TIME between aircraft), other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-022",
+          "description": "Condition C6 BOUNDARY: Position change with separation = EXACTLY TBS_MIN_SEPARATION_TIME, other conditions true → behavior per spec",
+          "present": false
+        }
+      ]
+    },
+    {
+      "scenario_name": "scenario_SKYRADAR-ARR-044-03",
+      "scenario_path": "dataset/TS_ARR-044/test_04/scenario_SKYRADAR-ARR-044-03.xml",
+      "test_cases": [
+        {
+          "id": "TC-001",
+          "description": "Nominal Case: All conditions true (AMAN=OPERATIONAL, phase=ARRIVAL, valid TTT, delay>AMAN_MIN_DELAY_THRESHOLD, runway assigned, AMAN enabled, separation OK) → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-002",
+          "description": "Condition C1 NOT satisfied: AMAN status != OPERATIONAL (other conditions true) → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-003",
+          "description": "C1 State transition: AMAN status changes from non-OPERATIONAL to OPERATIONAL → alert SHOULD be not generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-004",
+          "description": "C1 State transition: AMAN status changes from OPERATIONAL to non-OPERATIONAL → alert SHOULD be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-005",
+          "description": "Condition C2 NOT satisfied: Track in phase != ARRIVAL, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-006",
+          "description": "Condition C2 NOT satisfied: Track in phase ARRIVAL but time-to-threshold INVALID, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-007",
+          "description": "C2 State transition: Track changes from phase non-ARRIVAL to ARRIVAL with valid TTT → alert should NOT be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-008",
+          "description": "C2 State transition: Time-to-threshold becomes INVALID during ARRIVAL phase → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-009",
+          "description": "Condition C3 NOT satisfied: Track OUTSIDE E-TMA boundary limits, other conditions true → alert SHOULD be generated",
+          "present": true
+        },
+        {
+          "id": "TC-010",
+          "description": "C3 State transition: Track ENTERS E-TMA limits → alert should NOT be generated after entry",
+          "present": true
+        },
+        {
+          "id": "TC-011",
+          "description": "C3 State transition: Track LEAVES E-TMA limits → alert should be generated after entry",
+          "present": true
+        },
+        {
+          "id": "TC-012",
+          "description": "Condition C4 BOUNDARY: Calculated arrival delay = EXACTLY AMAN_MIN_DELAY_THRESHOLD, other conditions true → behavior per spec (typically alert generated because condition is > not >=)",
+          "present": false
+        },
+        {
+          "id": "TC-013",
+          "description": "Condition C4 NOT satisfied: Calculated arrival delay < AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-014",
+          "description": "Condition C4 satisfied: Calculated arrival delay > AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-015",
+          "description": "C4 State transition: Arrival delay changes from < AMAN_MIN_DELAY_THRESHOLD to > AMAN_MIN_DELAY_THRESHOLD → alert should NOT be generated after delay increase",
+          "present": false
+        },
+        {
+          "id": "TC-016",
+          "description": "C4 State transition: Arrival delay changes from > AMAN_MIN_DELAY_THRESHOLD to < AMAN_MIN_DELAY_THRESHOLD → alert SHOULD be generated after delay decrease",
+          "present": false
+        },
+        {
+          "id": "TC-017",
+          "description": "Condition C5 NOT satisfied: Track HAS NO assigned arrival runway (runway not specified), other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-018",
+          "description": "Condition C5 NOT satisfied: Track has assigned runway BUT AMAN sequencing is DISABLED on that runway, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-019",
+          "description": "Condition C5 satisfied: Track has assigned runway AND AMAN sequencing ENABLED → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-020",
+          "description": "Condition C6 NOT satisfied: Sequence position change would VIOLATE minimum separation TBS_MIN_SEPARATION_TIME, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-021",
+          "description": "Condition C6 satisfied: Sequence position change RESPECTS minimum separation (> TBS_MIN_SEPARATION_TIME between aircraft), other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-022",
+          "description": "Condition C6 BOUNDARY: Position change with separation = EXACTLY TBS_MIN_SEPARATION_TIME, other conditions true → behavior per spec",
+          "present": false
+        }
+      ]
+    },
+    {
+      "scenario_name": "scenario_SKYRADAR-ARR-044-04",
+      "scenario_path": "dataset/TS_ARR-044/test_05/scenario_SKYRADAR-ARR-044-04.xml",
+      "test_cases": [
+        {
+          "id": "TC-001",
+          "description": "Nominal Case: All conditions true (AMAN=OPERATIONAL, phase=ARRIVAL, valid TTT, delay>AMAN_MIN_DELAY_THRESHOLD, runway assigned, AMAN enabled, separation OK) → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-002",
+          "description": "Condition C1 NOT satisfied: AMAN status != OPERATIONAL (other conditions true) → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-003",
+          "description": "C1 State transition: AMAN status changes from non-OPERATIONAL to OPERATIONAL → alert SHOULD be not generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-004",
+          "description": "C1 State transition: AMAN status changes from OPERATIONAL to non-OPERATIONAL → alert SHOULD be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-005",
+          "description": "Condition C2 NOT satisfied: Track in phase != ARRIVAL, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-006",
+          "description": "Condition C2 NOT satisfied: Track in phase ARRIVAL but time-to-threshold INVALID, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-007",
+          "description": "C2 State transition: Track changes from phase non-ARRIVAL to ARRIVAL with valid TTT → alert should NOT be generated after transition",
+          "present": false
+        },
+        {
+          "id": "TC-008",
+          "description": "C2 State transition: Time-to-threshold becomes INVALID during ARRIVAL phase → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-009",
+          "description": "Condition C3 NOT satisfied: Track OUTSIDE E-TMA boundary limits, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-010",
+          "description": "C3 State transition: Track ENTERS E-TMA limits → alert should NOT be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-011",
+          "description": "C3 State transition: Track LEAVES E-TMA limits → alert should be generated after entry",
+          "present": false
+        },
+        {
+          "id": "TC-012",
+          "description": "Condition C4 BOUNDARY: Calculated arrival delay = EXACTLY AMAN_MIN_DELAY_THRESHOLD, other conditions true → behavior per spec (typically alert generated because condition is > not >=)",
+          "present": false
+        },
+        {
+          "id": "TC-013",
+          "description": "Condition C4 NOT satisfied: Calculated arrival delay < AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert SHOULD be generated",
+          "present": true
+        },
+        {
+          "id": "TC-014",
+          "description": "Condition C4 satisfied: Calculated arrival delay > AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert should NOT be generated",
+          "present": true
+        },
+        {
+          "id": "TC-015",
+          "description": "C4 State transition: Arrival delay changes from < AMAN_MIN_DELAY_THRESHOLD to > AMAN_MIN_DELAY_THRESHOLD → alert should NOT be generated after delay increase",
+          "present": true
+        },
+        {
+          "id": "TC-016",
+          "description": "C4 State transition: Arrival delay changes from > AMAN_MIN_DELAY_THRESHOLD to < AMAN_MIN_DELAY_THRESHOLD → alert SHOULD be generated after delay decrease",
+          "present": "false_positive"
+        },
+        {
+          "id": "TC-017",
+          "description": "Condition C5 NOT satisfied: Track HAS NO assigned arrival runway (runway not specified), other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-018",
+          "description": "Condition C5 NOT satisfied: Track has assigned runway BUT AMAN sequencing is DISABLED on that runway, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-019",
+          "description": "Condition C5 satisfied: Track has assigned runway AND AMAN sequencing ENABLED → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-020",
+          "description": "Condition C6 NOT satisfied: Sequence position change would VIOLATE minimum separation TBS_MIN_SEPARATION_TIME, other conditions true → alert SHOULD be generated",
+          "present": false
+        },
+        {
+          "id": "TC-021",
+          "description": "Condition C6 satisfied: Sequence position change RESPECTS minimum separation (> TBS_MIN_SEPARATION_TIME between aircraft), other conditions true → alert should NOT be generated",
+          "present": false
+        },
+        {
+          "id": "TC-022",
+          "description": "Condition C6 BOUNDARY: Position change with separation = EXACTLY TBS_MIN_SEPARATION_TIME, other conditions true → behavior per spec",
+          "present": false
+        }
+      ]
+    }
+  ],
+  "aggregated_test_cases": [
+    {
+      "id": "TC-001",
+      "description": "Nominal Case: All conditions true (AMAN=OPERATIONAL, phase=ARRIVAL, valid TTT, delay>AMAN_MIN_DELAY_THRESHOLD, runway assigned, AMAN enabled, separation OK) → alert should NOT be generated",
+      "present": true
+    },
+    {
+      "id": "TC-002",
+      "description": "Condition C1 NOT satisfied: AMAN status != OPERATIONAL (other conditions true) → alert SHOULD be generated",
+      "present": true
+    },
+    {
+      "id": "TC-003",
+      "description": "C1 State transition: AMAN status changes from non-OPERATIONAL to OPERATIONAL → alert SHOULD be not generated after transition",
+      "present": true
+    },
+    {
+      "id": "TC-004",
+      "description": "C1 State transition: AMAN status changes from OPERATIONAL to non-OPERATIONAL → alert SHOULD be generated after transition",
+      "present": true
+    },
+    {
+      "id": "TC-005",
+      "description": "Condition C2 NOT satisfied: Track in phase != ARRIVAL, other conditions true → alert SHOULD be generated",
+      "present": true
+    },
+    {
+      "id": "TC-006",
+      "description": "Condition C2 NOT satisfied: Track in phase ARRIVAL but time-to-threshold INVALID, other conditions true → alert SHOULD be generated",
+      "present": true
+    },
+    {
+      "id": "TC-007",
+      "description": "C2 State transition: Track changes from phase non-ARRIVAL to ARRIVAL with valid TTT → alert should NOT be generated after transition",
+      "present": true
+    },
+    {
+      "id": "TC-008",
+      "description": "C2 State transition: Time-to-threshold becomes INVALID during ARRIVAL phase → alert SHOULD be generated",
+      "present": false
+    },
+    {
+      "id": "TC-009",
+      "description": "Condition C3 NOT satisfied: Track OUTSIDE E-TMA boundary limits, other conditions true → alert SHOULD be generated",
+      "present": true
+    },
+    {
+      "id": "TC-010",
+      "description": "C3 State transition: Track ENTERS E-TMA limits → alert should NOT be generated after entry",
+      "present": true
+    },
+    {
+      "id": "TC-011",
+      "description": "C3 State transition: Track LEAVES E-TMA limits → alert should be generated after entry",
+      "present": true
+    },
+    {
+      "id": "TC-012",
+      "description": "Condition C4 BOUNDARY: Calculated arrival delay = EXACTLY AMAN_MIN_DELAY_THRESHOLD, other conditions true → behavior per spec (typically alert generated because condition is > not >=)",
+      "present": false
+    },
+    {
+      "id": "TC-013",
+      "description": "Condition C4 NOT satisfied: Calculated arrival delay < AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert SHOULD be generated",
+      "present": true
+    },
+    {
+      "id": "TC-014",
+      "description": "Condition C4 satisfied: Calculated arrival delay > AMAN_MIN_DELAY_THRESHOLD, other conditions true → alert should NOT be generated",
+      "present": true
+    },
+    {
+      "id": "TC-015",
+      "description": "C4 State transition: Arrival delay changes from < AMAN_MIN_DELAY_THRESHOLD to > AMAN_MIN_DELAY_THRESHOLD → alert should NOT be generated after delay increase",
+      "present": true
+    },
+    {
+      "id": "TC-016",
+      "description": "C4 State transition: Arrival delay changes from > AMAN_MIN_DELAY_THRESHOLD to < AMAN_MIN_DELAY_THRESHOLD → alert SHOULD be generated after delay decrease",
+      "present": "false_positive"
+    },
+    {
+      "id": "TC-017",
+      "description": "Condition C5 NOT satisfied: Track HAS NO assigned arrival runway (runway not specified), other conditions true → alert SHOULD be generated",
+      "present": false
+    },
+    {
+      "id": "TC-018",
+      "description": "Condition C5 NOT satisfied: Track has assigned runway BUT AMAN sequencing is DISABLED on that runway, other conditions true → alert SHOULD be generated",
+      "present": false
+    },
+    {
+      "id": "TC-019",
+      "description": "Condition C5 satisfied: Track has assigned runway AND AMAN sequencing ENABLED → alert should NOT be generated",
+      "present": false
+    },
+    {
+      "id": "TC-020",
+      "description": "Condition C6 NOT satisfied: Sequence position change would VIOLATE minimum separation TBS_MIN_SEPARATION_TIME, other conditions true → alert SHOULD be generated",
+      "present": false
+    },
+    {
+      "id": "TC-021",
+      "description": "Condition C6 satisfied: Sequence position change RESPECTS minimum separation (> TBS_MIN_SEPARATION_TIME between aircraft), other conditions true → alert should NOT be generated",
+      "present": false
+    },
+    {
+      "id": "TC-022",
+      "description": "Condition C6 BOUNDARY: Position change with separation = EXACTLY TBS_MIN_SEPARATION_TIME, other conditions true → behavior per spec",
+      "present": false
+    }
+  ],
+  "errors": []
+}

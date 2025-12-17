@@ -4,8 +4,9 @@ import json
 import os
 from typing import Any
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_mistralai import ChatMistralAI
 from langfuse import Evaluation
+from pydantic import SecretStr
 
 
 def test_case_coverage_evaluator(
@@ -23,11 +24,11 @@ def test_case_coverage_evaluator(
     Returns:
         Evaluation object with score and reasoning
     """
-    # Initialize LLM for evaluation using Google Gemini
-    api_key = os.getenv("GOOGLE_API_KEY")
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        api_key=api_key,
+    # Initialize LLM for evaluation using Mistral
+    api_key = os.getenv("MISTRAL_API_KEY")
+    llm = ChatMistralAI(
+        model_name="mistral-large-latest",
+        api_key=SecretStr(api_key) if api_key else None,
         temperature=0,
     )
 
@@ -158,6 +159,33 @@ Return your response in JSON format:
             json_end = response_text.find("```", json_start)
             response_text = response_text[json_start:json_end].strip()
 
+        # Fix unescaped newlines within string values
+        def fix_json_newlines(text: str) -> str:
+            """Escape literal newlines only within quoted strings."""
+            result = []
+            in_string = False
+            i = 0
+            while i < len(text):
+                char = text[i]
+                # Handle escaped characters
+                if char == "\\" and i + 1 < len(text):
+                    result.append(char)
+                    result.append(text[i + 1])
+                    i += 2
+                    continue
+                # Toggle string state on unescaped quotes
+                elif char == '"':
+                    in_string = not in_string
+                    result.append(char)
+                # Escape newlines only inside strings
+                elif char == "\n" and in_string:
+                    result.append("\\n")
+                else:
+                    result.append(char)
+                i += 1
+            return "".join(result)
+
+        response_text = fix_json_newlines(response_text)
         result = json.loads(response_text)
 
         score = result.get("score", 0)

@@ -33,7 +33,9 @@ def get_mistral_client() -> Mistral:
 
 def find_scenario_files(req_name: str) -> list[str]:
     """Find XML scenario files for a requirement."""
-    req_folder = DATASET_PATH / f"TS_{req_name}"
+    # Remove SKYRADAR- prefix if present (dataset uses short format)
+    short_name = req_name.replace("SKYRADAR-", "")
+    req_folder = DATASET_PATH / f"TS_{short_name}"
     if not req_folder.exists():
         return []
     return [

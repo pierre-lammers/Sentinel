@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_ARR-044-03"
+			testTitle="Time-Based Arrival Sequencing Optimization (E-TMA boundary)"
+			testObjective="This test verifies that SKYRADAR only adjusts arrival sequence positions when the track is located within the Extended Terminal Maneuvering Area (E-TMA) boundary.&#xa;
+			Conditions for automatic arrival sequence adjustment are:&#xa;
+1) The AMAN (Arrival Manager) system status is equal to OPERATIONAL. &#xa;
+2) The track is in ARRIVAL flight phase with valid time-to-threshold prediction. &#xa;
+3) The track is located within the Extended Terminal Maneuvering Area (E-TMA) boundary. &#xa;
+4) The calculated arrival delay is greater than CSP: AMAN_MIN_DELAY_THRESHOLD (120 seconds). &#xa;
+5) The track has an assigned arrival runway with active AMAN sequencing enabled. &#xa;
+6) The potential sequence position change would not violate minimum time-based separation (VSP: TBS_MIN_SEPARATION_TIME = 90 seconds).&#xa;
+- 1st step: Track outside E-TMA boundary, alert SHOULD be generated.&#xa;
+- 2nd step: Track enters E-TMA boundary, NO alert (automatic adjustment occurs).&#xa;
+- 3rd step: Track exits E-TMA boundary, alert SHOULD be generated.&#xa;
+&#xa;
+CSP: AMAN_MIN_DELAY_THRESHOLD=120 seconds. VSP: TBS_MIN_SEPARATION_TIME=90 seconds.&#xa;
+E-TMA boundary for EHAM: X[0-100], Y[0-100].&#xa;
+All conditions except C3 are met for automatic sequence adjustment."
+			requirement1="SKYRADAR-ARR-044" requirementCMATS1="SKYRADAR-ARR-044"
+			historyDate1="17/12/2025"
+			historyEcrId1="FRSKYRADAR-8127"
+			historyVersion1="4.1"
+			actionComment="Track BAW123 transitions across E-TMA boundary to test condition C3."
+			actionDescription="Track is configured with all conditions satisfied except E-TMA boundary position. Position changes test whether sequence adjustment depends on E-TMA containment.">
+
+	<!-- Flight Plan Definition -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="BAW123" cfl="80" cflUnity="F"
+	                  arrivalRwy="25R" arrivalAirport="EHAM" isControlled="true" flightRules="I"/>
+
+	<!-- Couple flight plan to track -->
+	<IdentUpdate recNum="1" time="2000" callsign="BAW123" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- Set AMAN status to OPERATIONAL -->
+	<SystemStatusUpdate time="3000">
+		<AMANSystemStatus status="OPERATIONAL"/>
+	</SystemStatusUpdate>
+
+	<!-- Configure runway with AMAN sequencing enabled -->
+	<DatapageAMANUpdate time="4000">
+		<RunwayConfig runwayId="25R" amanSequencingEnabled="true"/>
+	</DatapageAMANUpdate>
+
+	<!-- BASELINE: Track outside E-TMA boundary (posX=150, posY=150 is outside EHAM E-TMA: X[0-100], Y[0-100]) -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="8000" measFlightLevelAge="0"
+		             posX="150.0" posY="150.0" cartSpeedX="-80" cartSpeedY="-80"
+		             identStr="1" baroAltitude="8000" baroAltitudeQNHCor="0" rocRodRate="-700">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="BAW123" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1300" timeToThresholdValid="true"
+			          arrivalDelay="150" currentSequencePosition="4" potentialSequencePosition="2"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="6000"
+	            resultDescription="Baseline: Track outside E-TMA boundary (condition 3 NOT satisfied), alert SHOULD be generated for manual intervention."
+	            nextActionComment="Track moves inside E-TMA boundary at time 10000."
+	            nextActionDescription="With track inside E-TMA and all other conditions met, NO alert should be generated (automatic sequence adjustment occurs).">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true"/>
+	</TestResult>
+
+	<!-- TRANSITION: Track enters E-TMA boundary (posX=50, posY=50 is inside EHAM E-TMA) -->
+	<TrackUpdates time="10000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7500" measFlightLevelAge="0"
+		             posX="50.0" posY="50.0" cartSpeedX="-70" cartSpeedY="-70"
+		             identStr="1" baroAltitude="7500" baroAltitudeQNHCor="0" rocRodRate="-700">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="BAW123" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1100" timeToThresholdValid="true"
+			          arrivalDelay="155" currentSequencePosition="4" potentialSequencePosition="2"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="11000"
+	            resultDescription="Track inside E-TMA boundary (all conditions satisfied), NO alert should be generated (automatic sequence adjustment occurs)."
+	            nextActionComment="Track moves outside E-TMA boundary at time 15000."
+	            nextActionDescription="With track outside E-TMA (condition 3 NOT satisfied), alert SHOULD be generated for manual intervention.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- TRANSITION: Track exits E-TMA boundary (posX=120, posY=120 is outside EHAM E-TMA) -->
+	<TrackUpdates time="15000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7000" measFlightLevelAge="0"
+		             posX="120.0" posY="120.0" cartSpeedX="-60" cartSpeedY="-60"
+		             identStr="1" baroAltitude="7000" baroAltitudeQNHCor="0" rocRodRate="-700">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="BAW123" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="900" timeToThresholdValid="true"
+			          arrivalDelay="160" currentSequencePosition="4" potentialSequencePosition="2"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="16000"
+	            resultDescription="Track outside E-TMA boundary (condition 3 NOT satisfied), alert SHOULD be generated for manual intervention.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true"/>
+	</TestResult>
+
+</UpdateRoot>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UpdateRoot xmlns="N_DATA_MODEL_HLFT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			testId="TS_ARR-044-00"
+			testTitle="Time-Based Arrival Sequencing Optimization (NOMINAL CASE - All conditions satisfied)"
+			testObjective="This test verifies that SKYRADAR does NOT generate an alert when ALL conditions for automatic arrival sequence adjustment are satisfied.&#xa;
+			Conditions for automatic arrival sequence adjustment are:&#xa;
+1) The AMAN (Arrival Manager) system status is equal to OPERATIONAL. &#xa;
+2) The track is in ARRIVAL flight phase with valid time-to-threshold prediction. &#xa;
+3) The track is located within the Extended Terminal Maneuvering Area (E-TMA) boundary. &#xa;
+4) The calculated arrival delay is greater than CSP: AMAN_MIN_DELAY_THRESHOLD (120 seconds). &#xa;
+5) The track has an assigned arrival runway with active AMAN sequencing enabled. &#xa;
+6) The potential sequence position change would not violate minimum time-based separation (VSP: TBS_MIN_SEPARATION_TIME = 90 seconds).&#xa;
+&#xa;
+This is the GOLDEN PATH test case: When ALL 6 conditions are satisfied, NO alert should be generated because SKYRADAR automatically adjusts the arrival sequence for optimal flow management.&#xa;
+&#xa;
+CSP: AMAN_MIN_DELAY_THRESHOLD=120 seconds. VSP: TBS_MIN_SEPARATION_TIME=90 seconds.&#xa;
+ALL conditions C1-C6 are continuously met throughout this test."
+			requirement1="SKYRADAR-ARR-044" requirementCMATS1="SKYRADAR-ARR-044"
+			historyDate1="17/12/2025"
+			historyEcrId1="FRSKYRADAR-8131"
+			historyVersion1="4.1"
+			actionComment="Track QFA567 maintains all conditions satisfied to verify nominal automatic sequence adjustment behavior."
+			actionDescription="Track is configured with all 6 conditions continuously satisfied. This test verifies that NO alert is generated when automatic sequence adjustment can proceed normally.">
+
+	<!-- Flight Plan Definition -->
+	<FlightPlanUpdate recNum="1" time="1000" callsign="QFA567" cfl="80" cflUnity="F"
+	                  arrivalRwy="25R" arrivalAirport="EHAM" isControlled="true" flightRules="I"/>
+
+	<!-- Couple flight plan to track -->
+	<IdentUpdate recNum="1" time="2000" callsign="QFA567" couplingStatus="AUTO" fplNum="1" sysTrackNum="1"/>
+
+	<!-- Set AMAN status to OPERATIONAL (Condition 1: SATISFIED) -->
+	<SystemStatusUpdate time="3000">
+		<AMANSystemStatus status="OPERATIONAL"/>
+	</SystemStatusUpdate>
+
+	<!-- Configure runway 25R with AMAN sequencing enabled (Condition 5: SATISFIED) -->
+	<DatapageAMANUpdate time="4000">
+		<RunwayConfig runwayId="25R" amanSequencingEnabled="true"/>
+	</DatapageAMANUpdate>
+
+	<!-- NOMINAL CASE 1: All conditions satisfied -->
+	<TrackUpdates time="5000">
+		<TrackUpdate trackNumber="1" measFlightLevel="8000" measFlightLevelAge="0"
+		             posX="50.0" posY="50.0" cartSpeedX="120" cartSpeedY="-80"
+		             identStr="1" baroAltitude="8000" baroAltitudeQNHCor="0" rocRodRate="-750">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="QFA567" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<!-- Condition 2: ARRIVAL phase with valid time-to-threshold (SATISFIED)
+			     Condition 4: Arrival delay 180s > 120s threshold (SATISFIED)
+			     Condition 6: Separation 105s >= 90s min (SATISFIED) -->
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1250" timeToThresholdValid="true"
+			          arrivalDelay="180" currentSequencePosition="9" potentialSequencePosition="6"
+			          separationWithPreceding="105" separationWithFollowing="140"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="6000"
+	            resultDescription="NOMINAL CASE: All 6 conditions satisfied (C1: AMAN OPERATIONAL, C2: ARRIVAL phase valid, C3: Inside E-TMA [50,50], C4: Delay 180s > 120s, C5: Runway 25R AMAN enabled, C6: Sep 105s >= 90s). NO alert should be generated - automatic sequence adjustment occurs."
+	            nextActionComment="Track continues with all conditions satisfied at time 10000."
+	            nextActionDescription="Verify that automatic sequence adjustment continues without alerts.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- NOMINAL CASE 2: All conditions still satisfied -->
+	<TrackUpdates time="10000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7500" measFlightLevelAge="0"
+		             posX="55.0" posY="45.0" cartSpeedX="115" cartSpeedY="-75"
+		             identStr="1" baroAltitude="7500" baroAltitudeQNHCor="0" rocRodRate="-750">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="QFA567" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="1100" timeToThresholdValid="true"
+			          arrivalDelay="185" currentSequencePosition="9" potentialSequencePosition="6"
+			          separationWithPreceding="110" separationWithFollowing="145"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="11000"
+	            resultDescription="NOMINAL CASE continues: All 6 conditions still satisfied (C1: AMAN OPERATIONAL, C2: ARRIVAL phase valid, C3: Inside E-TMA [55,45], C4: Delay 185s > 120s, C5: Runway 25R AMAN enabled, C6: Sep 110s >= 90s). NO alert should be generated."
+	            nextActionComment="Track continues with all conditions satisfied at time 15000."
+	            nextActionDescription="Final verification that automatic sequence adjustment continues without alerts.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+	<!-- NOMINAL CASE 3: All conditions still satisfied -->
+	<TrackUpdates time="15000">
+		<TrackUpdate trackNumber="1" measFlightLevel="7000" measFlightLevelAge="0"
+		             posX="60.0" posY="40.0" cartSpeedX="110" cartSpeedY="-70"
+		             identStr="1" baroAltitude="7000" baroAltitudeQNHCor="0" rocRodRate="-750">
+			<Mode3A value="1"/>
+			<FlightPlan callsign="QFA567" ifpsFlightId="1" airportArr="EHAM"
+			            flightCatFr1Fr2="0" runway="25R"/>
+			<Ident sac="118" sic="218"/>
+			<SysTrkAge ssrAge="0"/>
+			<AMANData flightPhase="ARRIVAL" timeToThreshold="950" timeToThresholdValid="true"
+			          arrivalDelay="190" currentSequencePosition="9" potentialSequencePosition="6"
+			          separationWithPreceding="115" separationWithFollowing="150"/>
+		</TrackUpdate>
+	</TrackUpdates>
+
+	<TestResult resultTimeInMilliSec="16000"
+	            resultDescription="NOMINAL CASE final check: All 6 conditions still satisfied (C1: AMAN OPERATIONAL, C2: ARRIVAL phase valid, C3: Inside E-TMA [60,40], C4: Delay 190s > 120s, C5: Runway 25R AMAN enabled, C6: Sep 115s >= 90s). NO alert should be generated - automatic sequence adjustment completes successfully.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	</TestResult>
+
+</UpdateRoot>
