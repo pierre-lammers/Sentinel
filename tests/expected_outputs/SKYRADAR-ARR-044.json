@@ -554,7 +554,7 @@
         {
           "id": "TC-016",
           "description": "C4 State transition: Arrival delay changes from > AMAN_MIN_DELAY_THRESHOLD to < AMAN_MIN_DELAY_THRESHOLD → alert SHOULD be generated after delay decrease",
-          "present": "false_positive"
+          "present": true
         },
         {
           "id": "TC-017",

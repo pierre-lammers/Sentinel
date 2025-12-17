@@ -9,6 +9,8 @@ pytestmark = pytest.mark.anyio
 
 @pytest.mark.langsmith
 async def test_agent_simple_passthrough() -> None:
-    inputs = {"req_id": "REQ-001", "test_scenario": "<scenario/>"}
+    inputs = {"req_name": "REQ-001"}
     res: Any = await graph.ainvoke(inputs)  # type: ignore[arg-type]
     assert res is not None
+    assert "aggregated_test_cases" in res
+    assert "false_positives" in res

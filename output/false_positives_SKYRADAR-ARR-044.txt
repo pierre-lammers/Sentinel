@@ -1,0 +1,74 @@
+False Positives Report for Requirement: SKYRADAR-ARR-044
+================================================================================
+
+Scenario: scenario_SKYRADAR-ARR-044-00
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_01/scenario_SKYRADAR-ARR-044-00.xml
+Test Case: TC-001 - Verify that no alert is generated when all conditions are satisfied.
+Reason: The XML lacks assertions/checks for the expected outcome. The test case claims to verify that no alert is generated when all conditions are satisfied, but there are no explicit checks or assertions in the XML to confirm this. The test results only describe the conditions but do not verify the absence of alerts.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-01
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-01.xml
+Test Case: TC-001 - Verify that no alert is generated when all conditions are satisfied.
+Reason: The XML lacks concrete input values for the test case, specific steps to exercise the functionality, and assertions/checks for the expected outcome. The test does not actually validate the scenario it claims to test. The XML only describes the setup and transitions without any verification of the expected behavior.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-01
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-01.xml
+Test Case: TC-002 - Verify that an alert is generated when the AMAN system status is not OPERATIONAL.
+Reason: The XML lacks concrete input values for the AMAN system status transitions and does not include any assertions or checks for the expected outcomes of the alert generation based on the AMAN system status. The test description claims to verify alert generation based on AMAN system status, but there are no steps or checks in the XML to validate this.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-01
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_02/scenario_SKYRADAR-ARR-044-01.xml
+Test Case: TC-012 - Verify that the system generates an alert when the AMAN system status transitions from OPERATIONAL to any other state.
+Reason: The XML lacks concrete input values for the AMAN system status transitions, steps that exercise the specific functionality of generating alerts based on AMAN status, and assertions/checks for the expected outcomes. The test results only describe the expected behavior without actual verification implementation.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-02
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_03/scenario_SKYRADAR-ARR-044-02.xml
+Test Case: TC-001 - Verify that no alert is generated when all conditions are satisfied.
+Reason: The XML lacks concrete input values for the test case, specific steps that exercise the functionality, and assertions/checks for the expected outcomes. The test results section only describes the expected behavior without any actual verification steps or checks.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-02
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_03/scenario_SKYRADAR-ARR-044-02.xml
+Test Case: TC-003 - Verify that an alert is generated when the track is not in ARRIVAL flight phase.
+Reason: The XML lacks concrete input values for the test case, specific steps that exercise the functionality, and assertions/checks for the expected outcome. The test does not actually validate that an alert is generated when the track is not in ARRIVAL flight phase.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-02
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_03/scenario_SKYRADAR-ARR-044-02.xml
+Test Case: TC-004 - Verify that an alert is generated when the track does not have a valid time-to-threshold prediction.
+Reason: The XML lacks concrete input values for the test case, specific steps that exercise the functionality, and assertions/checks for the expected outcome. The test does not actually validate the scenario it claims to test. The XML only describes the setup and transitions without any verification steps.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-02
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_03/scenario_SKYRADAR-ARR-044-02.xml
+Test Case: TC-019 - Verify that the system generates an alert when the track has an invalid time-to-threshold prediction (e.g., negative value, non-numeric value).
+Reason: The XML lacks concrete input values for the test case, specific steps that exercise the functionality of generating an alert for an invalid time-to-threshold prediction, and assertions/checks for the expected outcome. The test description claims to verify this functionality but the XML does not provide any evidence of actual verification steps.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-03
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_04/scenario_SKYRADAR-ARR-044-03.xml
+Test Case: TC-005 - Verify that an alert is generated when the track is not located within the E-TMA boundary.
+Reason: The XML lacks concrete input values for the track's position, steps that exercise the specific functionality of the E-TMA boundary check, and assertions/checks for the expected outcome of generating alerts. The test description claims to verify alert generation based on the E-TMA boundary but does not provide any verification steps or assertions to support this claim.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-03
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_04/scenario_SKYRADAR-ARR-044-03.xml
+Test Case: TC-014 - Verify that the system generates an alert when the track transitions out of the E-TMA boundary.
+Reason: The XML lacks concrete input values for the track's position, steps that exercise the specific functionality of transitioning out of the E-TMA boundary, and assertions/checks for the expected outcome of generating an alert. The test description claims to verify the alert generation but the XML does not provide the necessary verification elements.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-04
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_05/scenario_SKYRADAR-ARR-044-04.xml
+Test Case: TC-006 - Verify that an alert is generated when the calculated arrival delay is less than or equal to AMAN_MIN_DELAY_THRESHOLD.
+Reason: The XML lacks concrete input values for the arrival delay, steps that exercise the specific functionality, and assertions/checks for the expected outcome. The test does not actually validate what it claims to test. The XML only describes the scenario without any verification steps.
+--------------------------------------------------------------------------------
+
+Scenario: scenario_SKYRADAR-ARR-044-04
+File: /Users/pierrelammers/Desktop/Sentinel/dataset/TS_ARR-044/test_05/scenario_SKYRADAR-ARR-044-04.xml
+Test Case: TC-015 - Verify that the system generates an alert when the calculated arrival delay transitions below AMAN_MIN_DELAY_THRESHOLD.
+Reason: The XML lacks concrete input values for the arrival delay transitions, steps that exercise the specific functionality of generating alerts based on arrival delay, and assertions/checks for the expected outcomes. The test results section only describes the expected behavior without any actual verification implementation.
+--------------------------------------------------------------------------------
