@@ -12,6 +12,9 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env")
 # Initialize Langfuse client
 langfuse = get_client()
 
+PROMPT_TYPES: List[str] = ["evaluator", "production"]
+PROMPT_FILES: Dict[str, str] = {p: f"{p}.json" for p in PROMPT_TYPES}
+
 
 def retrieve_prompt(name: str, **variables) -> str | None:
     """
@@ -71,12 +74,9 @@ def retrieve_json_path(name: str) -> Path:
     output_directory_str = os.getenv("PROMPT_PATH", ".")
     output_dir = Path(output_directory_str)
 
-    if name.lower().startswith("evaluator"):
-        file_name = "evaluator.json"
-    else:
-        file_name = "production.json"
+    prefix = name.lower().split(" - ")[0]
 
-    return output_dir / file_name
+    return output_dir / PROMPT_FILES[prefix]
 
 
 def read_json_file(file_path: Path) -> Dict[str, Any]:
@@ -135,16 +135,41 @@ def write_to_json_file(prompt_name: str, prompt_data: Dict[str, Any]):
         print(f"Write error in {file_path.name}: {e}")
 
 
-def cleanup_local_json(file_path: Path, remote_names: List[str]):
+def cleanup_local_json(file: Path, remote_names: List[str]):
     """
     Removes prompts from local JSON files that are no longer present on Langfuse.
     """
-    pass
+    data = read_json_file(file)
+    prompts_to_remove = []
+
+    # Create a new list with all names in lowercase
+    remote_names_lower = [n.lower() for n in remote_names]
+
+    # Retrieve old prompt to remove from JSON file
+    if len(data) > len(remote_names):
+        for name in data: 
+            if name.lower() not in remote_names_lower:
+                print(f"🗑️ Prompt '{name}' no longer exists on Langfuse. Removed from {file.name}")
+                prompts_to_remove.append(name)
+
+        for prompt in prompts_to_remove:
+            del data[prompt]
+        
+        try: 
+            with open(file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            print(f"Successfully cleaned up {file.name}")
+        except Exception as e:
+            print(f"Write error in {file.name}: {e}")
+            
+    else:
+        print("No need to clean up")
 
 
 if __name__ == "__main__":
     # 1. Fetch all prompt names from Langfuse
     prompt_names = fetch_prompt_names(langfuse)
+    prompt_filtered: Dict[str, List[str]] = {p_type: [] for p_type in PROMPT_TYPES}
     
     if not prompt_names:
         print("\nNo prompt names retrieved from Langfuse. Exiting.")
@@ -153,11 +178,23 @@ if __name__ == "__main__":
 
     print(f"\nFound {len(prompt_names)} prompt(s) on Langfuse.")
 
+    # Filter the prompts by their type 
+    for prompt in prompt_names:
+        prefix, suffix = prompt.lower().split(" - ")
+        if prefix in prompt_filtered:
+            prompt_filtered[prefix].append(suffix)
+
     # 2. Process each prompt
     for name in prompt_names:
         prompt_content = fetch_single_prompt_content(langfuse, name)
         if prompt_content:
             write_to_json_file(name, prompt_content)
+
+    # 3. Cleanup local JSON files
+    output_directory_str = os.getenv("PROMPT_PATH", ".")
+    for file in Path(output_directory_str).glob("*.json"):
+        cleanup_local_json(file, prompt_filtered[file.name.split(".")[0]])
+
     
     langfuse.flush()
     print("\n✅ Sync and cleanup completed successfully.")
