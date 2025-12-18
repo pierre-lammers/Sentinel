@@ -7,6 +7,8 @@ from typing import Any
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langfuse import Evaluation
 
+from src.langfuse.utils import retrieve_prompt
+
 
 def test_case_coverage_evaluator(
     *, output: Any, expected_output: Any, **kwargs: Any
@@ -66,58 +68,12 @@ def test_case_coverage_evaluator(
         else expected_data
     )
 
-    # Create evaluation prompt
-    evaluation_prompt = f"""You are evaluating test case coverage. Compare the generated output against reference test cases.
+    variables = {
+        "output_str": output_str,
+        "expected_str": expected_str
+    }
 
-<generated_output>
-{output_str}
-</generated_output>
-
-<reference_test_cases>
-{expected_str}
-</reference_test_cases>
-
-<evaluation_criteria>
-Count how many test cases from reference_test_cases are present in generated_output.
-
-A test case is considered "present" if:
-- The same test scenario is described (exact wording not required)
-- The same condition being tested is covered
-- Equivalent formulations are acceptable (e.g., "NTZ inactive" = "NTZ area is not active")
-
-Calculate the percentage: (FOUND / total reference tests) × 100
-</evaluation_criteria>
-
-<instructions>
-1. List all test cases from reference_test_cases
-2. For each reference test case, check if it exists in generated_output (FOUND or MISSING)
-3. Calculate the percentage of FOUND test cases
-4. Apply the scoring rule below
-</instructions>
-
-<scoring_rule>
-First list each reference test case and mark it as FOUND or MISSING. Then calculate the percentage of found test cases and explain your scoring.
-Score between 1 and 10 based on percentage of reference tests found:
-- 0-9% = 1
-- 10-19% = 2
-- 20-29% = 3
-- 30-39% = 4
-- 40-49% = 5
-- 50-59% = 6
-- 60-69% = 7
-- 70-79% = 8
-- 80-89% = 9
-- 90-100% = 10
-
-Return your response in JSON format:
-{{
-    "analysis": "Your detailed analysis of each test case",
-    "found_count": number_of_found_test_cases,
-    "total_count": total_reference_test_cases,
-    "percentage": calculated_percentage,
-    "score": final_score_1_to_10
-}}
-</scoring_rule>"""
+    evaluation_prompt = retrieve_prompt("Evaluator - Coverage", **variables)
 
     try:
         # Call LLM for evaluation
