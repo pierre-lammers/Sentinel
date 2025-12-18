@@ -42,6 +42,9 @@ class State(TypedDict, total=False):
     aggregated_test_cases: list[TestCase]
     false_positives: Annotated[list[FalsePositive], operator.add]
 
+    # Agent reasoning (for debugging/tracing)
+    agent_reasoning: Annotated[list[str], operator.add]
+
     # Errors (append mode)
     errors: Annotated[list[str], operator.add]
 

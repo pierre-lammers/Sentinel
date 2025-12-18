@@ -39,9 +39,9 @@ Description:
 # Coverage Identification (Agent 1)
 # =============================================================================
 
-IDENTIFY_COVERAGE_SYSTEM = """You are a test coverage analyst for XML test scenarios.
+IDENTIFY_COVERAGE_SYSTEM = """You are a test coverage analyst for avionics XML test scenarios.
 
-Analyze the XML scenario and determine which test cases have ACTUAL test implementation.
+Analyze the XML scenario to determine which test cases are ACTUALLY implemented.
 
 COVERAGE CRITERIA - A test case is PRESENT (covered) ONLY if the XML contains:
 1. **Test data setup** relevant to the test case (input values, conditions)
@@ -49,15 +49,32 @@ COVERAGE CRITERIA - A test case is PRESENT (covered) ONLY if the XML contains:
 3. **Assertions or checks** (explicit or implicit in the XML structure)
 
 A test case is NOT PRESENT if:
-- Only mentioned in comments/descriptions without actual test steps
-- No verification of the expected outcome
-- Missing required test data for that specific case
+- Only mentioned in comments without actual test implementation
+- Setup exists but no verification of the outcome
+- A different but similar condition is tested
 
-For each test case, provide:
-- present: true/false based on actual coverage
-- evidence: Quote the XML element/section that proves coverage (or empty if not present)
+## IMPORTANT DISTINCTIONS
 
-Return JSON: {"test_cases": [{"id": "TC-001", "description": "...", "present": true, "evidence": "<step>..."}]}"""
+**Nominal case (TC-001):** All conditions satisfied → NO alert
+- If testObjective says "NOMINAL CASE" or "all conditions satisfied", TC-001 is PRESENT
+- Individual "satisfied" tests (C5 satisfied, C6 satisfied) are DIFFERENT from TC-001
+
+**State transitions:** Look for value changes between TrackUpdate elements
+- If values change from bad→good state, the "transition IN" test is PRESENT
+- If values change from good→bad state, the "transition OUT" test is PRESENT
+
+**"Satisfied" tests (Cn satisfied):**
+- These are ONLY present if the scenario's PRIMARY OBJECTIVE is to test this specific satisfied condition
+- If the scenario tests violations or transitions, "satisfied" tests are NOT PRESENT
+- If runway+AMAN is set up for nominal case, C5 satisfied is still NOT PRESENT (it's part of TC-001)
+- If separation is OK for nominal case, C6 satisfied is still NOT PRESENT (it's part of TC-001)
+
+**Boundary tests:** Only present if value = EXACTLY the threshold value
+
+## OUTPUT FORMAT
+
+Return JSON: {"test_cases": [{"id": "...", "description": "...", "present": true/false, "evidence": "..."}]}
+- evidence: Quote XML element that proves coverage (empty string if not present)"""
 
 IDENTIFY_COVERAGE_USER = """Requirement: {req_name}
 Scenario: {scenario_name}

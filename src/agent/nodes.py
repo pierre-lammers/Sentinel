@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from pathlib import Path
 from typing import Any
 
+from langchain.agents import create_agent
+from langchain_core.messages import HumanMessage
+from langchain_mistralai import ChatMistralAI
 from langgraph.runtime import Runtime
 from mistralai.models import SystemMessage, UserMessage
 
@@ -27,7 +31,84 @@ from agent.prompts import (
     format_test_cases_list,
 )
 from agent.state import Context, State
+from agent.tools import COVERAGE_TOOLS
 from agent.utils import find_scenario_files, get_mistral_client
+
+# Retry configuration for transient API errors
+MAX_RETRIES = 3
+RETRY_DELAY_SECONDS = 5
+
+# =============================================================================
+# Coverage Agent
+# =============================================================================
+
+COVERAGE_AGENT_PROMPT = """You are a test coverage analyst for avionics software.
+
+Your task is to analyze XML test scenarios and determine which test cases are covered.
+
+**Approach:**
+1. Use `read_test_file` to read the scenario file
+2. Use `parse_xml_structure` to understand the XML structure
+3. For each test case, use `search_in_file` to find evidence
+4. If needed, use `list_related_files` to explore related files
+
+**Coverage criteria:**
+- A test case is COVERED if the scenario has setup + verification + assertions
+- A test case is NOT COVERED if only mentioned in comments
+- Quote the XML elements that prove coverage
+
+**Output format:**
+For each test case, provide:
+- Test case ID and description
+- Status: COVERED or NOT_COVERED
+- Evidence: specific XML elements/lines (if covered)
+
+Be thorough and verify actual implementation, not just mentions."""
+
+
+def get_coverage_agent(model: str = "codestral-2501") -> Any:
+    """Create a coverage analysis agent."""
+    llm = ChatMistralAI(model_name=model, temperature=0.0)
+    return create_agent(
+        model=llm,
+        tools=COVERAGE_TOOLS,
+        system_prompt=COVERAGE_AGENT_PROMPT,
+    )
+
+
+def _parse_agent_coverage_output(
+    agent_output: str, generated_test_cases: list[str]
+) -> list[TestCase]:
+    """Parse agent output into structured coverage data."""
+    test_cases: list[TestCase] = []
+
+    for tc_string in generated_test_cases:
+        parts = tc_string.split(":", 1)
+        tc_id = parts[0].strip()
+        tc_desc = parts[1].strip() if len(parts) > 1 else ""
+
+        # Check if covered in agent output
+        is_covered = False
+        if tc_id in agent_output:
+            # Find context around the test case ID
+            pattern = rf"{re.escape(tc_id)}[^A-Z]*?(COVERED|NOT_COVERED)"
+            match = re.search(pattern, agent_output, re.IGNORECASE)
+            if match:
+                is_covered = match.group(1).upper() == "COVERED"
+            else:
+                # Fallback: look for COVERED near the ID without NOT_
+                context_start = agent_output.find(tc_id)
+                context = agent_output[context_start : context_start + 200]
+                if (
+                    "COVERED" in context.upper()
+                    and "NOT_COVERED" not in context.upper()
+                ):
+                    is_covered = True
+
+        test_cases.append(TestCase(id=tc_id, description=tc_desc, present=is_covered))
+
+    return test_cases
+
 
 # =============================================================================
 # Data Loading Nodes
@@ -70,8 +151,8 @@ async def generate_test_cases(
     ctx = runtime.context or Context()
     client = get_mistral_client()
 
-    try:
-        response = await client.chat.parse_async(
+    async def _make_api_call() -> Any:
+        return await client.chat.parse_async(
             model=ctx.llm_model,
             messages=[
                 SystemMessage(content=GENERATE_TEST_CASES_SYSTEM),
@@ -87,6 +168,9 @@ async def generate_test_cases(
             temperature=ctx.temperature,
             response_format=TestCaseList,
         )
+
+    try:
+        response = await _retry_api_call(_make_api_call)
 
         parsed = _get_parsed(response)
         if not parsed:
@@ -169,6 +253,76 @@ async def analyze_scenario(state: State, runtime: Runtime[Context]) -> dict[str,
     }
 
 
+async def analyze_scenario_agent(
+    state: State, runtime: Runtime[Context]
+) -> dict[str, Any]:
+    """Analyze scenario using a ReAct agent with exploration tools.
+
+    The agent can read files, search patterns, parse XML, and explore
+    related files to determine test coverage with multi-step reasoning.
+    """
+    if state.get("errors"):
+        return {"current_scenario_index": state.get("current_scenario_index", 0) + 1}
+
+    paths = state.get("scenario_paths", [])
+    idx = state.get("current_scenario_index", 0)
+
+    if idx >= len(paths):
+        return {}
+
+    scenario_path = paths[idx]
+    ctx = runtime.context or Context()
+    scenario_name = Path(scenario_path).stem
+
+    # Create agent
+    agent = get_coverage_agent(model=ctx.llm_model)
+
+    # Format test cases for the prompt
+    test_cases_formatted = "\n".join(
+        [f"- {tc}" for tc in state.get("generated_test_cases", [])]
+    )
+
+    task_prompt = f"""Analyze this test scenario for coverage.
+
+**Scenario file:** {scenario_path}
+
+**Test cases to verify:**
+{test_cases_formatted}
+
+**Requirement context:**
+{state.get("requirement_description", "N/A")}
+
+For each test case, determine if it is COVERED or NOT_COVERED.
+Provide evidence from the XML file for covered test cases."""
+
+    try:
+        result = await agent.ainvoke({"messages": [HumanMessage(content=task_prompt)]})
+        final_message = result["messages"][-1].content
+
+        # Parse agent output to extract coverage info
+        test_cases = _parse_agent_coverage_output(
+            final_message, state.get("generated_test_cases", [])
+        )
+
+        scenario_result: ScenarioResult = {
+            "scenario_name": scenario_name,
+            "scenario_path": scenario_path,
+            "test_cases": test_cases,
+        }
+
+        return {
+            "scenario_results": [scenario_result],
+            "current_scenario_index": idx + 1,
+            "agent_reasoning": [final_message],
+        }
+
+    except Exception as e:
+        return {
+            "errors": [f"Agent analysis error for {scenario_path}: {e}"],
+            "current_scenario_index": idx + 1,
+        }
+
+
 async def _identify_coverage(
     state: State, ctx: Context, scenario_name: str, content: str
 ) -> dict[str, Any]:
@@ -178,8 +332,8 @@ async def _identify_coverage(
 
     client = get_mistral_client()
 
-    try:
-        response = await client.chat.parse_async(
+    async def _make_api_call() -> Any:
+        return await client.chat.parse_async(
             model=ctx.llm_model,
             messages=[
                 SystemMessage(content=IDENTIFY_COVERAGE_SYSTEM),
@@ -197,6 +351,9 @@ async def _identify_coverage(
             temperature=ctx.temperature,
             response_format=CoverageAnalysis,
         )
+
+    try:
+        response = await _retry_api_call(_make_api_call)
 
         parsed = _get_parsed(response)
         if not parsed:
@@ -248,8 +405,8 @@ async def _verify_single_tc(
     """Verify a single test case for false positive."""
     client = get_mistral_client()
 
-    try:
-        response = await client.chat.parse_async(
+    async def _make_api_call() -> Any:
+        return await client.chat.parse_async(
             model=ctx.llm_model,
             messages=[
                 SystemMessage(content=VERIFY_FALSE_POSITIVE_SYSTEM),
@@ -267,6 +424,9 @@ async def _verify_single_tc(
             temperature=ctx.temperature,
             response_format=FalsePositiveCheck,
         )
+
+    try:
+        response = await _retry_api_call(_make_api_call)
 
         parsed = _get_parsed(response)
         if parsed and parsed.is_false_positive:
@@ -329,6 +489,42 @@ async def aggregate_test_cases(
 # =============================================================================
 # Helpers
 # =============================================================================
+
+
+async def _retry_api_call(
+    api_call: Any,
+    max_retries: int = MAX_RETRIES,
+    delay: float = RETRY_DELAY_SECONDS,
+) -> Any:
+    """Retry an async API call with exponential backoff.
+
+    Args:
+        api_call: Async callable to execute
+        max_retries: Maximum number of retry attempts
+        delay: Initial delay between retries in seconds
+
+    Returns:
+        API response
+
+    Raises:
+        Last exception if all retries fail
+    """
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            return await api_call()
+        except Exception as e:
+            last_exception = e
+            error_str = str(e)
+            # Only retry on 503 or transient errors
+            if "503" in error_str or "Service unavailable" in error_str:
+                if attempt < max_retries - 1:
+                    wait_time = delay * (2**attempt)  # Exponential backoff
+                    await asyncio.sleep(wait_time)
+                    continue
+            # Re-raise non-retryable errors immediately
+            raise
+    raise last_exception  # type: ignore[misc]
 
 
 def _get_parsed(response: Any) -> Any:
