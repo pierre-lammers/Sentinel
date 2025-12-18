@@ -11,40 +11,33 @@ from typing_extensions import TypedDict
 from agent.models import FalsePositive, ScenarioResult, TestCase
 
 
-def replace_or_keep(current: str, new: str) -> str:
-    """Replace value only if new is non-empty."""
-    return new if new else current
-
-
-def last_value(current: int, new: int) -> int:
+def _last_value(_: int, new: int) -> int:
     """Use the new value (last write wins)."""
     return new
 
 
 class State(TypedDict, total=False):
-    """Pipeline state using TypedDict with reducers.
+    """Pipeline state for test coverage analysis.
 
-    Uses Annotated types for automatic state merging:
-    - operator.add: Append lists
-    - replace_or_keep: Only update if non-empty
+    Reducers:
+    - operator.add: Append to lists
+    - _last_value: Replace with new value
     """
 
     # Input
     req_name: str
 
+    # Requirement data
+    requirement_description: str
+
     # Scenario iteration
     scenario_paths: list[str]
-    current_scenario_index: Annotated[int, last_value]
-    current_scenario_content: Annotated[str, replace_or_keep]
-    current_scenario_name: Annotated[str, replace_or_keep]
+    current_scenario_index: Annotated[int, _last_value]
 
-    # Requirement data
-    requirement_description: Annotated[str, replace_or_keep]
-
-    # Generated test cases (list of "TC-XXX: description")
+    # Generated test cases (format: "TC-XXX: description")
     generated_test_cases: list[str]
 
-    # Results (append mode)
+    # Results (append mode for loop accumulation)
     scenario_results: Annotated[list[ScenarioResult], operator.add]
     aggregated_test_cases: list[TestCase]
     false_positives: Annotated[list[FalsePositive], operator.add]
@@ -57,6 +50,5 @@ class State(TypedDict, total=False):
 class Context:
     """Runtime configuration for the pipeline."""
 
-    llm1_model: str = "codestral-2501"
-    llm2_model: str = "codestral-2501"
+    llm_model: str = "codestral-2501"
     temperature: float = 0.0

@@ -6,16 +6,26 @@
 
 GENERATE_TEST_CASES_SYSTEM = """You are a software testing expert specializing in avionics/aerospace systems.
 
-Generate comprehensive test cases for the given requirement. Focus on:
+Generate comprehensive test cases for the given requirement. For each condition mentioned:
 
-1. **Nominal Cases**: Standard expected behavior
-2. **Boundary Conditions**: Edge values, limits, thresholds
-3. **Error Scenarios**: Invalid inputs, failures, timeouts
-4. **State Transitions**: Mode changes, sequence flows
+1. **Nominal Case**: All conditions satisfied → expected behavior (usually NO alert)
+2. **Condition NOT Satisfied**: For EACH condition Cn AND its sub-conditions, test when NOT satisfied
+3. **State Transitions IN**: Cn transitions from NOT satisfied to satisfied
+4. **State Transitions OUT**: Cn transitions from satisfied to NOT satisfied
+5. **Boundary Cases**: For thresholds/limits, test at EXACTLY the boundary value
+
+IMPORTANT - Split conditions with multiple aspects:
+- If a condition has sub-conditions (e.g., "track in ARRIVAL phase WITH valid time-to-threshold"), test EACH sub-condition separately
+- Example: C2 = "ARRIVAL phase + valid TTT" → generate: "C2: phase != ARRIVAL" AND "C2: TTT invalid"
+
+For threshold conditions (delays, separations, etc.), generate:
+- Value < threshold (NOT satisfied)
+- Value = EXACTLY threshold (BOUNDARY)
+- Value > threshold (satisfied)
 
 For each test case provide:
 - Unique ID (TC-XXX format)
-- Concise, actionable description
+- Description with: condition reference (C1, C2...), sub-condition if any, test type, expected outcome
 
 Return ONLY valid JSON: {"test_cases": [{"id": "TC-001", "description": "..."}]}"""
 
@@ -65,19 +75,29 @@ Scenario XML:
 # False Positive Verification (Agent 2)
 # =============================================================================
 
-VERIFY_FALSE_POSITIVE_SYSTEM = """You are a test verification expert. Your task is to detect FALSE POSITIVES.
+VERIFY_FALSE_POSITIVE_SYSTEM = """You are a test verification expert for avionics XML test scenarios.
 
-A FALSE POSITIVE occurs when:
-1. The scenario CLAIMS to test something (via name, description, or structure)
-2. BUT the XML LACKS actual verification implementation
+Your task is to verify if a test case has ACTUAL implementation in the XML.
 
-Verification checklist:
-- [ ] Are there concrete input values for this test case?
-- [ ] Are there steps that exercise the specific functionality?
-- [ ] Are there assertions/checks for the expected outcome?
-- [ ] Does the test actually validate what it claims to test?
+IMPORTANT: This is an avionics XML test format with specific verification patterns:
 
-If ANY verification element is missing, it's a FALSE POSITIVE.
+VALID VERIFICATION ELEMENTS in this format:
+1. <Alerts alertType="..." alertGenerated="true/false"/> - This IS an assertion
+2. <TestResult> with resultDescription - This documents expected behavior
+3. <TrackUpdate> with flight data - This provides concrete input values
+4. <SystemStatusUpdate>, <DatapageAMANUpdate> - These configure test conditions
+5. Any XML element that sets up or verifies conditions IS valid test content
+
+A test case is PROPERLY IMPLEMENTED if:
+- Input conditions are set up via XML elements (TrackUpdate, SystemStatusUpdate, etc.)
+- Expected outcome is documented (TestResult description)
+- Alert assertion exists (<Alerts alertGenerated="true/false"/>)
+
+A test case is a FALSE POSITIVE ONLY if:
+- The scenario mentions the test case but has NO relevant XML elements at all
+- The XML completely lacks any setup or verification for that specific condition
+
+IMPORTANT: Be LENIENT. If the XML has relevant data and assertions, the test IS implemented.
 
 Return JSON:
 {
