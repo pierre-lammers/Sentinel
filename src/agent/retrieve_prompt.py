@@ -15,24 +15,36 @@ langfuse = get_client()
 PROMPT_TYPES: List[str] = ["evaluator", "production"]
 PROMPT_FILES: Dict[str, str] = {p: f"{p}.json" for p in PROMPT_TYPES}
 
+def retrieve_prompt(prompt_name: str, **variables) -> str | None:
+    """
+    Retrieves a prompt from the local JSON file and formats its placeholders.
+    """
 
-def retrieve_prompt(name: str, **variables) -> str | None:
-    """
-    Retrieves a single prompt template from Langfuse, formats it with variables, 
-    and returns the final string.
-    """
-    print("Retrieving Langfuse prompt:", name)
+    # 1. Extract the short name (e.g., "Coverage") to find the key in JSON
+    short_name = prompt_name.split(" - ")[-1]
     
-    try:
-        prompt_object = langfuse.get_prompt(name, label="latest")
-        prompt_template_string = prompt_object.prompt
-    except Exception as e:
-        print(f"Error retrieving prompt '{name}' from Langfuse: {e}")
+    # 2. Locate the file and read the data
+    file_path = retrieve_json_path(prompt_name)
+    all_prompts = read_json_file(file_path)
+    
+    # 3. Check if the prompt exists in our local dictionary
+    if short_name not in all_prompts:
+        print(f"Error: Prompt '{short_name}' not found in {file_path.name}")
         return None
     
-    # Format the template with dynamic variables
-    return prompt_template_string.format(**variables)
+    # 4. Get the raw template string
+    prompt_template = all_prompts[short_name].get("prompt", "")
 
+    try:
+        # 5. Replace {key} with value from **variables
+        # .format(**variables) automatically maps {"user": "Alice"} to {user}
+        return prompt_template.format(**variables)
+    except KeyError as e:
+        print(f"Error: Missing variable {e} for prompt '{short_name}'")
+        return prompt_template # Returns unformatted if a variable is missing
+    except Exception as e:
+        print(f"Formatting error: {e}")
+        return None
 
 def fetch_prompt_names(client) -> List[str]:
     """
@@ -149,7 +161,7 @@ def cleanup_local_json(file: Path, remote_names: List[str]):
     if len(data) > len(remote_names):
         for name in data: 
             if name.lower() not in remote_names_lower:
-                print(f"🗑️ Prompt '{name}' no longer exists on Langfuse. Removed from {file.name}")
+                print(f"\n🗑️ Prompt '{name}' no longer exists on Langfuse. Removed from {file.name}")
                 prompts_to_remove.append(name)
 
         for prompt in prompts_to_remove:
@@ -165,36 +177,54 @@ def cleanup_local_json(file: Path, remote_names: List[str]):
     else:
         print("No need to clean up")
 
+# --- Main Execution ---
 
-if __name__ == "__main__":
-    # 1. Fetch all prompt names from Langfuse
+def sync_prompts_from_langfuse():       
     prompt_names = fetch_prompt_names(langfuse)
     prompt_filtered: Dict[str, List[str]] = {p_type: [] for p_type in PROMPT_TYPES}
     
     if not prompt_names:
         print("\nNo prompt names retrieved from Langfuse. Exiting.")
         langfuse.flush()
-        exit()
+        return
 
     print(f"\nFound {len(prompt_names)} prompt(s) on Langfuse.")
 
-    # Filter the prompts by their type 
     for prompt in prompt_names:
-        prefix, suffix = prompt.lower().split(" - ")
-        if prefix in prompt_filtered:
-            prompt_filtered[prefix].append(suffix)
+        parts = prompt.lower().split(" - ")
+        if len(parts) >= 2:
+            prefix, suffix = parts[0], parts[1]
+            if prefix in prompt_filtered:
+                prompt_filtered[prefix].append(suffix)
+        else:
+            print(f"⚠️ Skipping prompt with invalid format: {prompt}")
 
-    # 2. Process each prompt
     for name in prompt_names:
         prompt_content = fetch_single_prompt_content(langfuse, name)
         if prompt_content:
             write_to_json_file(name, prompt_content)
 
-    # 3. Cleanup local JSON files
-    output_directory_str = os.getenv("PROMPT_PATH", ".")
-    for file in Path(output_directory_str).glob("*.json"):
-        cleanup_local_json(file, prompt_filtered[file.name.split(".")[0]])
+    output_dir = Path(os.getenv("PROMPT_PATH", "."))
+    for p_type in PROMPT_TYPES:
+        file_path = output_dir / PROMPT_FILES[p_type]
+        if file_path.exists():
+            cleanup_local_json(file_path, prompt_filtered[p_type])
 
-    
     langfuse.flush()
     print("\n✅ Sync and cleanup completed successfully.")
+
+def test_retrieve_prompt():
+    variables = {
+        "output_str": "expert",
+        "expected_str": "Dune 2",
+    }
+    pt = retrieve_prompt("Evaluator - Coverage", **variables)
+
+    print(pt) 
+
+if __name__ == "__main__":
+    # Synchronize Langfuse prompts with local JSON files
+    sync_prompts_from_langfuse()
+
+    # Use to test the function
+    #test_retrieve_prompt()
