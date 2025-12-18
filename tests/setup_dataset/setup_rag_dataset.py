@@ -51,7 +51,7 @@ def create_rag_dataset() -> None:
     )
 
     # Path to RAG expected outputs directory
-    rag_expected_outputs_dir = Path(__file__).parent / "rag_expected_outputs"
+    rag_expected_outputs_dir = Path(__file__).parent.parent / "rag_expected_outputs"
 
     # Check if directory exists
     if not rag_expected_outputs_dir.exists():

@@ -51,7 +51,7 @@ def create_all_datasets() -> None:
     )
 
     # Path to expected outputs directory
-    expected_outputs_dir = Path(__file__).parent / "expected_outputs"
+    expected_outputs_dir = Path(__file__).parent.parent / "expected_outputs"
 
     # Check if directory exists
     if not expected_outputs_dir.exists():

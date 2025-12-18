@@ -36,7 +36,7 @@ async def create_dataset() -> None:
         print(f"Dataset might already exist or creation failed: {e}")
 
     # Load expected outputs
-    expected_outputs_dir = Path(__file__).parent / "expected_outputs"
+    expected_outputs_dir = Path(__file__).parent.parent / "expected_outputs"
     expected_files = list(expected_outputs_dir.glob("*.json"))
 
     if not expected_files:

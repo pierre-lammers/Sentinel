@@ -25,7 +25,7 @@ from agent.regex_extract import (  # noqa: E402
     RegexState,
     retrieve_requirement_regex,
 )
-from tests.rag_evaluator import requirement_retrieval_evaluator  # noqa: E402
+from tests.evaluators import requirement_retrieval_evaluator  # noqa: E402
 
 
 def run_experiment(method: Literal["rag", "regex"] = "rag") -> None:

@@ -16,7 +16,7 @@ sys.path.insert(0, str(project_root))
 
 from agent.nodes import generate_test_cases  # noqa: E402
 from agent.state import Context, State  # noqa: E402
-from tests.test_case_generation_evaluator import (  # noqa: E402
+from tests.evaluators import (  # noqa: E402
     test_case_generation_evaluator,
 )
 
