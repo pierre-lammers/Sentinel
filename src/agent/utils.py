@@ -31,16 +31,18 @@ def get_mistral_client() -> Mistral:
     return Mistral(api_key=api_key)
 
 
-def find_scenario_files(req_name: str) -> list[str]:
-    """Find XML scenario files for a requirement."""
-    # Remove SKYRADAR- prefix if present (dataset uses short format)
-    short_name = req_name.replace("SKYRADAR-", "")
-    req_folder = DATASET_PATH / f"TS_{short_name}"
-    if not req_folder.exists():
-        return []
-    return [
-        str(f)
-        for test_dir in sorted(req_folder.glob("test_*"))
-        if test_dir.is_dir()
-        for f in test_dir.glob("scenario_*.xml")
+async def find_scenario_files(req_name: str) -> list[str]:
+    """Find XML scenario files for a requirement using deep agent."""
+    from agent.deep_agent import find_requirement_files
+
+    # Use deep agent to find all files for the requirement
+    all_files = await find_requirement_files(req_name, verbose=False)
+
+    # Filter to keep only scenario XML files (pattern: scenario_*.xml)
+    scenario_files = [
+        f
+        for f in all_files
+        if Path(f).name.startswith("scenario_") and f.endswith(".xml")
     ]
+
+    return scenario_files

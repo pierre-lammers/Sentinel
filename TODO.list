@@ -7,6 +7,9 @@
 - chercher dans la SRS des termes spécifiques du req
 - separate tests cases generation from the main graph to evaluate it
 
+- enlever le filtre scenario pour deep agent (il recup tous les tests et dataset d'un req donné)
+- refactor le usage de mistral car code répété
+
 
 low prio:
 - auto detect the format of req id 

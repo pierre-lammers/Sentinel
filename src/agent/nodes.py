@@ -117,7 +117,7 @@ def _parse_agent_coverage_output(
 
 async def load_scenarios(state: State, runtime: Runtime[Context]) -> dict[str, Any]:  # noqa: ARG001
     """Load XML scenario file paths for the requirement."""
-    paths = await asyncio.to_thread(find_scenario_files, state["req_name"])
+    paths = await find_scenario_files(state["req_name"])
     if not paths:
         return {"errors": [f"No scenarios found for {state['req_name']}"]}
     return {"scenario_paths": paths, "current_scenario_index": 0}
