@@ -59,41 +59,59 @@ def search_in_file(query: str, file_path: str) -> list[str]:
 
 
 @tool
-def parse_xml_structure(file_path: str) -> dict[str, Any]:
-    """Parse XML test file and return structured information.
+def parse_test_structure(file_path: str) -> dict[str, Any]:
+    """Parse test file and return structured information about its format.
+
+    This tool automatically detects the file format (XML, JSON, YAML, etc.)
+    and returns structured information about the test file's content.
 
     Args:
-        file_path: Path to the XML file
+        file_path: Path to the test file
 
     Returns:
-        Dictionary with XML structure info (tags, attributes, hierarchy)
+        Dictionary with file structure info (format, structure, hierarchy)
     """
     try:
         path = Path(file_path)
         if not path.is_absolute():
             path = DATASET_PATH / file_path
         content = path.read_text(encoding="utf-8")
-        root = ET.fromstring(content)
 
-        def parse_element(elem: ET.Element, depth: int = 0) -> dict[str, Any]:
-            result: dict[str, Any] = {
-                "tag": elem.tag,
-                "attributes": dict(elem.attrib),
+        # Try to detect and parse as XML
+        try:
+            root = ET.fromstring(content)
+
+            def parse_element(elem: ET.Element, depth: int = 0) -> dict[str, Any]:
+                result: dict[str, Any] = {
+                    "tag": elem.tag,
+                    "attributes": dict(elem.attrib),
+                }
+                if elem.text and elem.text.strip():
+                    result["text"] = elem.text.strip()[:100]
+                if depth < 3:  # Limit depth to avoid huge output
+                    children = [parse_element(child, depth + 1) for child in elem]
+                    if children:
+                        result["children"] = children[:10]  # Limit children
+                return result
+
+            return {
+                "format": "XML",
+                "root_tag": root.tag,
+                "structure": parse_element(root),
             }
-            if elem.text and elem.text.strip():
-                result["text"] = elem.text.strip()[:100]
-            if depth < 3:  # Limit depth to avoid huge output
-                children = [parse_element(child, depth + 1) for child in elem]
-                if children:
-                    result["children"] = children[:10]  # Limit children
-            return result
+        except ET.ParseError:
+            pass
 
+        # Fallback: return basic structure analysis
+        lines = content.split("\n")
         return {
-            "root_tag": root.tag,
-            "structure": parse_element(root),
+            "format": "text/unknown",
+            "line_count": len(lines),
+            "preview": "\n".join(lines[:20]),
+            "note": "Could not parse as structured format. Use read_test_file for full content.",
         }
     except Exception as e:
-        return {"error": f"Error parsing XML: {e}"}
+        return {"error": f"Error parsing file: {e}"}
 
 
 @tool
@@ -161,7 +179,7 @@ def get_file_summary(file_path: str, max_lines: int = 50) -> str:
 COVERAGE_TOOLS = [
     read_test_file,
     search_in_file,
-    parse_xml_structure,
+    parse_test_structure,
     list_related_files,
     get_file_summary,
 ]

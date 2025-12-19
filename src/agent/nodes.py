@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from langchain.agents import create_agent
+from deepagents import create_deep_agent
 from langchain_core.messages import HumanMessage
 from langchain_mistralai import ChatMistralAI
 from langgraph.runtime import Runtime
@@ -42,34 +42,84 @@ RETRY_DELAY_SECONDS = 5
 # Coverage Agent
 # =============================================================================
 
-COVERAGE_AGENT_PROMPT = """You are a test coverage analyst for avionics software.
+COVERAGE_AGENT_PROMPT = """You are a test coverage analyst with deep reasoning capabilities.
 
-Your task is to analyze XML test scenarios and determine which test cases are covered.
+Your mission is to analyze test scenarios and determine which test cases are truly covered,
+using careful reasoning and systematic exploration.
 
-**Approach:**
-1. Use `read_test_file` to read the scenario file
-2. Use `parse_xml_structure` to understand the XML structure
-3. For each test case, use `search_in_file` to find evidence
-4. If needed, use `list_related_files` to explore related files
+## Analysis Approach
 
-**Coverage criteria:**
-- A test case is COVERED if the scenario has setup + verification + assertions
-- A test case is NOT COVERED if only mentioned in comments
-- Quote the XML elements that prove coverage
+Use a multi-step reasoning process (chain of thought):
 
-**Output format:**
-For each test case, provide:
-- Test case ID and description
-- Status: COVERED or NOT_COVERED
-- Evidence: specific XML elements/lines (if covered)
+1. **Understand the Test Scenario:**
+   - Use `read_test_file` to read the scenario file
+   - Use `parse_test_structure` to understand the file format and structure
+   - Use `get_file_summary` to get an overview of the file
 
-Be thorough and verify actual implementation, not just mentions."""
+2. **For Each Test Case - Think Step by Step:**
+
+   a) **Understand What Should Be Tested:**
+      - What is the test case trying to verify?
+      - What conditions or behaviors should be validated?
+
+   b) **Search for Evidence:**
+      - Use `search_in_file` to find keywords, identifiers, or patterns
+      - Look for test setup (input data, preconditions)
+      - Look for verification logic (checks, assertions, expected outcomes)
+
+   c) **Verify Actual Implementation:**
+      - Does the test file ACTUALLY set up the described scenario?
+      - Does it ACTUALLY verify the expected outcome?
+      - Is there explicit or implicit assertion logic?
+
+   d) **Beware of False Positives:**
+      - Distinguish between what's DESCRIBED vs. what's IMPLEMENTED
+      - Comments or documentation mentioning a test ≠ actual test implementation
+      - Similar-sounding test cases may test different conditions
+      - Check if the test data matches what the test case requires
+
+3. **Explore Related Context (if needed):**
+   - Use `list_related_files` to find related test files or configurations
+   - Use `read_test_file` on related files if they might contain relevant setup
+
+## Coverage Criteria
+
+A test case is **COVERED** if and only if ALL of these are present:
+- ✅ Test data setup that matches the test case requirements
+- ✅ Execution or simulation of the scenario
+- ✅ Verification of the expected outcome (explicit or implicit assertions)
+
+A test case is **NOT COVERED** if:
+- ❌ Only mentioned in comments/documentation without implementation
+- ❌ Setup exists but no verification of outcome
+- ❌ A different (but similar) condition is tested instead
+- ❌ The description says one thing but the code tests another
+
+## Output Format
+
+For each test case, provide your reasoning and conclusion:
+
+**Test Case: [ID] - [Description]**
+
+**Reasoning:**
+[Your step-by-step thought process: what you searched for, what you found,
+why you believe it's covered or not covered]
+
+**Status:** COVERED or NOT_COVERED
+
+**Evidence:** [Specific lines, elements, or patterns from the test file that prove
+your conclusion. Empty if not covered]
+
+---
+
+Be systematic, thorough, and honest. When in doubt, verify your assumptions with additional searches.
+Focus on actual implementation, not just mentions or intentions."""
 
 
 def get_coverage_agent(model: str = "codestral-2501") -> Any:
-    """Create a coverage analysis agent."""
+    """Create a deep coverage analysis agent with reasoning capabilities."""
     llm = ChatMistralAI(model_name=model, temperature=0.0)
-    return create_agent(
+    return create_deep_agent(
         model=llm,
         tools=COVERAGE_TOOLS,
         system_prompt=COVERAGE_AGENT_PROMPT,
