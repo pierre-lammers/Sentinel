@@ -29,20 +29,3 @@ def get_mistral_client() -> Mistral:
     if not api_key:
         raise ValueError("MISTRAL_API_KEY not set")
     return Mistral(api_key=api_key)
-
-
-async def find_scenario_files(req_name: str) -> list[str]:
-    """Find XML scenario files for a requirement using deep agent."""
-    from agent.deep_agent import find_requirement_files
-
-    # Use deep agent to find all files for the requirement
-    all_files = await find_requirement_files(req_name, verbose=False)
-
-    # Filter to keep only scenario XML files (pattern: scenario_*.xml)
-    scenario_files = [
-        f
-        for f in all_files
-        if Path(f).name.startswith("scenario_") and f.endswith(".xml")
-    ]
-
-    return scenario_files

@@ -25,3 +25,12 @@ problems:
  that when all conditions are met you raised an alert => you need to rag all srs to know how to test)
 - a given req could said you need OPERATIONAL status but you don't know with the SRS the others status 
 so you can't test all the transitions
+
+
+
+
+Now :
+- structured output pour deep agent search + check que c'est bien un chemin + check si le fichier existe? 
+- plus de formatting après et gestion d'erreur
+- ajouter un agent pour filtrer scénario des datasets
+

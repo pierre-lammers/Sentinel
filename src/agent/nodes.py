@@ -13,6 +13,7 @@ from langchain_mistralai import ChatMistralAI
 from langgraph.runtime import Runtime
 from mistralai.models import SystemMessage, UserMessage
 
+from agent.deep_agent import retrieve_scenario_and_dataset_files
 from agent.models import (
     CoverageAnalysis,
     FalsePositive,
@@ -32,7 +33,7 @@ from agent.prompts import (
 )
 from agent.state import Context, State
 from agent.tools import COVERAGE_TOOLS
-from agent.utils import find_scenario_files, get_mistral_client
+from agent.utils import get_mistral_client
 
 # Retry configuration for transient API errors
 MAX_RETRIES = 3
@@ -167,10 +168,14 @@ def _parse_agent_coverage_output(
 
 async def load_scenarios(state: State, runtime: Runtime[Context]) -> dict[str, Any]:  # noqa: ARG001
     """Load XML scenario file paths for the requirement."""
-    paths = await find_scenario_files(state["req_name"])
+    paths = await retrieve_scenario_and_dataset_files(state["req_name"])
     if not paths:
         return {"errors": [f"No scenarios found for {state['req_name']}"]}
-    return {"scenario_paths": paths, "current_scenario_index": 0}
+    return {
+        "scenario_paths": paths.scenarios,
+        "dataset_paths": paths.datasets,
+        "current_scenario_index": 0,
+    }
 
 
 async def retrieve_requirement(

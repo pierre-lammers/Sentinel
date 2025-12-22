@@ -32,6 +32,7 @@ class State(TypedDict, total=False):
 
     # Scenario iteration
     scenario_paths: list[str]
+    dataset_paths: list[str]
     current_scenario_index: Annotated[int, _last_value]
 
     # Generated test cases (format: "TC-XXX: description")

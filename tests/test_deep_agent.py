@@ -4,7 +4,7 @@ import asyncio
 
 from dotenv import load_dotenv
 
-from agent.deep_agent import find_requirement_files
+from agent.deep_agent import analyze_requirement_files, find_requirement_files
 
 # Load environment variables
 load_dotenv()
@@ -12,20 +12,23 @@ load_dotenv()
 
 async def main() -> None:
     """Test the deep agent with a sample requirement ID."""
-    # Test with STCA-041
-    print("Testing with requirement ID: STCA-041")  # noqa: T201
-    print("-" * 80)  # noqa: T201
+    requirement_id = "STCA-041"
 
-    try:
-        files = await find_requirement_files("STCA-041", verbose=True)
-        print(f"\nFound {len(files)} files:")  # noqa: T201
-        for file_path in files:
-            print(f"  - {file_path}")  # noqa: T201
-    except Exception as e:
-        print(f"Error: {e}")  # noqa: T201
-        import traceback
+    print("============ALL FILES==============")
 
-        traceback.print_exc()
+    all_files = await find_requirement_files(requirement_id)
+    for f in all_files.files:
+        print(f"- {f}")
+
+    filtered_files = await analyze_requirement_files(all_files.files)
+
+    print("============SCENARIOS==============")
+    for f in filtered_files.scenarios:
+        print(f"- Scenario: {f}")
+
+    print("============DATASETS==============")
+    for f in filtered_files.datasets:
+        print(f"- Dataset: {f}")
 
 
 if __name__ == "__main__":
