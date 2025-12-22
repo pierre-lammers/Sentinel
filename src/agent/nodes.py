@@ -9,11 +9,11 @@ from typing import Any
 
 from deepagents import create_deep_agent
 from langchain_core.messages import HumanMessage
-from langchain_mistralai import ChatMistralAI
 from langgraph.runtime import Runtime
 from mistralai.models import SystemMessage, UserMessage
 
 from agent.deep_agent import retrieve_scenario_and_dataset_files
+from agent.llm_factory import get_llm, get_mistral_client
 from agent.models import (
     CoverageAnalysis,
     FalsePositive,
@@ -33,7 +33,6 @@ from agent.prompts import (
 )
 from agent.state import Context, State
 from agent.tools import COVERAGE_TOOLS
-from agent.utils import get_mistral_client
 
 # Retry configuration for transient API errors
 MAX_RETRIES = 3
@@ -119,7 +118,7 @@ Focus on actual implementation, not just mentions or intentions."""
 
 def get_coverage_agent(model: str = "codestral-2501") -> Any:
     """Create a deep coverage analysis agent with reasoning capabilities."""
-    llm = ChatMistralAI(model_name=model, temperature=0.0)
+    llm = get_llm(model=model, temperature=0.0)
     return create_deep_agent(
         model=llm,
         tools=COVERAGE_TOOLS,

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from langchain_chroma import Chroma
 from langchain_mistralai import MistralAIEmbeddings
-from mistralai import Mistral
 
 DATASET_PATH = Path(__file__).parent.parent.parent / "dataset"
 
@@ -21,11 +19,3 @@ def get_vector_store() -> Chroma:
         embedding_function=MistralAIEmbeddings(model="mistral-embed"),
         persist_directory=str(chroma_db_path),
     )
-
-
-def get_mistral_client() -> Mistral:
-    """Return the Mistral client."""
-    api_key = os.getenv("MISTRAL_API_KEY")
-    if not api_key:
-        raise ValueError("MISTRAL_API_KEY not set")
-    return Mistral(api_key=api_key)

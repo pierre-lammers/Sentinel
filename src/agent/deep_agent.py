@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any, List, cast
 
@@ -10,8 +9,9 @@ from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend  # type: ignore[import-untyped]
 from dotenv import load_dotenv
 from langchain.agents.structured_output import ToolStrategy
-from langchain_mistralai import ChatMistralAI
-from pydantic import BaseModel, Field, SecretStr, field_validator
+from pydantic import BaseModel, Field, field_validator
+
+from agent.llm_factory import get_llm
 
 DATASET_PATH = Path(__file__).parent.parent.parent / "dataset"
 
@@ -115,24 +115,12 @@ Be thorough: examine the content of each file carefully to make an accurate clas
 """
 
 
-def get_mistral_llm(
-    model: str = "codestral-2501", temperature: float = 0.0
-) -> ChatMistralAI:
-    """Get a ChatMistralAI instance configured with API key."""
-    api_key = os.getenv("MISTRAL_API_KEY")
-    if not api_key:
-        raise ValueError("MISTRAL_API_KEY not set")
-    return ChatMistralAI(
-        model_name=model, temperature=temperature, api_key=SecretStr(api_key)
-    )
-
-
 def create_dataset_explorer_agent(
     model: str = "codestral-2501",
     temperature: float = 0.0,
 ) -> Any:
     """Create a deep agent for exploring the test dataset with structured output."""
-    llm = get_mistral_llm(model=model, temperature=temperature)
+    llm = get_llm(model=model, temperature=temperature)
 
     agent = create_deep_agent(
         model=llm,
@@ -167,7 +155,7 @@ def create_file_analyzer_agent(
     temperature: float = 0.0,
 ) -> Any:
     """Create a deep agent for analyzing and classifying files as scenarios or datasets."""
-    llm = get_mistral_llm(model=model, temperature=temperature)
+    llm = get_llm(model=model, temperature=temperature)
 
     agent = create_deep_agent(
         model=llm,

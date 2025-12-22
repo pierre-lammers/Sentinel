@@ -9,7 +9,8 @@ from typing import Any
 from mistralai.models import SystemMessage, UserMessage
 from pydantic import BaseModel, Field
 
-from agent.utils import get_mistral_client, get_vector_store
+from agent.llm_factory import get_mistral_client
+from agent.utils import get_vector_store
 
 
 class FilteredRequirement(BaseModel):
