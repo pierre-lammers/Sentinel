@@ -1,204 +1,174 @@
 """Experiment evaluators for requirement evaluation using Langfuse datasets."""
 
 import json
-import os
-from typing import Any
+from typing import Any, cast
 
-from langchain_mistralai import ChatMistralAI
 from langfuse import Evaluation
-from pydantic import SecretStr
+from pydantic import BaseModel, Field
+
+from agent.llm_factory import get_llm
+
+
+class TestCaseMatch(BaseModel):
+    """Represents a match between an expected and generated test case."""
+
+    expected_description: str = Field(
+        description="Description of the expected test case"
+    )
+    generated_description: str = Field(
+        description="Description of the matching generated test case"
+    )
+    isSamePresent: bool = Field(
+        description="Whether output_present equals expected_present"
+    )
+
+
+class TestCaseMatches(BaseModel):
+    """List of test case matches."""
+
+    matches: list[TestCaseMatch] = Field(
+        description="List of matches for each expected test case"
+    )
 
 
 def test_case_coverage_evaluator(
     *, output: Any, expected_output: Any, **kwargs: Any
 ) -> Evaluation:
-    """LLM-as-judge evaluator for test case coverage.
+    """Evaluates test case coverage by comparing generated vs expected test cases.
 
-    Evaluates how many reference test cases are present in the generated output.
+    Uses an LLM to semantically match test case descriptions between output and expected_output.
 
     Args:
-        output: The generated output from the task
-        expected_output: The reference test cases
+        output: Graph output dict with 'aggregated_test_cases' field
+        expected_output: Expected output dict with 'aggregated_test_cases' field
         **kwargs: Additional keyword arguments
 
     Returns:
-        Evaluation object with score and reasoning
+        Evaluation object with score (0-10) and detailed comment
     """
-    # Initialize LLM for evaluation using Mistral
-    api_key = os.getenv("MISTRAL_API_KEY")
-    llm = ChatMistralAI(
-        model_name="mistral-large-latest",
-        api_key=SecretStr(api_key) if api_key else None,
-        temperature=0,
-    )
+    llm = get_llm(temperature=0)
 
-    # Extract aggregated_test_cases from output and expected_output
-    if isinstance(output, dict):
-        output_data = output.get("aggregated_test_cases", output)
-    else:
-        # If output is a string, try to parse it as JSON
+    # Parse output and expected_output if they are strings
+    if isinstance(output, str):
         try:
-            output_parsed = json.loads(output)
-            output_data = output_parsed.get("aggregated_test_cases", output_parsed)
-        except (json.JSONDecodeError, AttributeError):
-            output_data = output
+            output = json.loads(output)
+        except json.JSONDecodeError:
+            output = {}
+    if isinstance(expected_output, str):
+        try:
+            expected_output = json.loads(expected_output)
+        except json.JSONDecodeError:
+            expected_output = {}
+
+    # Extract aggregated_test_cases from dictionaries
+    if isinstance(output, dict):
+        output_test_cases = output.get("aggregated_test_cases", [])
+    else:
+        output_test_cases = []
 
     if isinstance(expected_output, dict):
-        expected_data = expected_output.get("aggregated_test_cases", expected_output)
+        expected_test_cases = expected_output.get("aggregated_test_cases", [])
     else:
-        # If expected_output is a string, try to parse it as JSON
-        try:
-            expected_parsed = json.loads(expected_output)
-            expected_data = expected_parsed.get(
-                "aggregated_test_cases", expected_parsed
-            )
-        except (json.JSONDecodeError, AttributeError):
-            expected_data = expected_output
+        expected_test_cases = []
 
-    # Convert to JSON strings for the prompt
-    output_str = (
-        json.dumps(output_data, indent=2)
-        if not isinstance(output_data, str)
-        else output_data
+    # Handle empty cases
+    if not expected_test_cases:
+        return Evaluation(
+            name="test_case_coverage",
+            value=0,
+            comment="No expected test cases in aggregated_test_cases",
+        )
+
+    if not output_test_cases:
+        return Evaluation(
+            name="test_case_coverage",
+            value=0,
+            comment="No generated test cases in aggregated_test_cases",
+        )
+
+    # Normalize present field (handle boolean and string values)
+    def normalize_present(value: Any) -> str:
+        """Normalize present field to string for comparison."""
+        if isinstance(value, bool):
+            return str(value).lower()
+        return str(value).lower()
+
+    # Build test case info with normalized present field
+    expected_with_present = [
+        {
+            "description": tc.get("description", str(tc)),
+            "present": normalize_present(tc.get("present")),
+            "id": tc.get("id", ""),
+        }
+        for tc in expected_test_cases
+    ]
+
+    output_with_present = [
+        {
+            "description": tc.get("description", str(tc)),
+            "present": normalize_present(tc.get("present")),
+            "id": tc.get("id", ""),
+        }
+        for tc in output_test_cases
+    ]
+
+    # Format for LLM with present field info
+    expected_text = "\n".join(
+        f"{i + 1}. {tc['description']} [present={tc['present']}]"
+        for i, tc in enumerate(expected_with_present)
     )
-    expected_str = (
-        json.dumps(expected_data, indent=2)
-        if not isinstance(expected_data, str)
-        else expected_data
+    output_text = "\n".join(
+        f"{i + 1}. {tc['description']} [present={tc['present']}]"
+        for i, tc in enumerate(output_with_present)
     )
 
     # Create evaluation prompt
-    evaluation_prompt = f"""You are evaluating test case status accuracy. Compare the generated output against reference test cases.
+    evaluation_prompt = f"""You are evaluating test case coverage by matching generated test cases to expected test cases.
 
-<generated_output>
-{output_str}
-</generated_output>
+<expected_test_cases>
+{expected_text}
+</expected_test_cases>
 
-<reference_test_cases>
-{expected_str}
-</reference_test_cases>
+<generated_test_cases>
+{output_text}
+</generated_test_cases>
 
-<evaluation_criteria>
-1. Identify test cases that are common between reference_test_cases and generated_output
-2. For each common test case, compare the "present" status field
-3. Count how many common test cases have identical "present" status
+For each expected test case:
+1. Find the generated test case that describes the SAME test scenario (semantic match)
+2. Compare their 'present' field values
+3. Set isSamePresent to true ONLY if both descriptions match semantically AND present values are identical
 
-A test case is considered "common" if:
-- The same test scenario is described (exact wording not required)
-- The same condition being tested is covered
-- Equivalent formulations are acceptable (e.g., "NTZ inactive" = "NTZ area is not active")
-
-Calculate the percentage: (test cases with matching present status / TOTAL reference test cases) × 100
-
-IMPORTANT: The denominator is the TOTAL number of reference test cases, NOT the number of common test cases.
-Example: If there are 15 reference test cases, 8 are found in generated output, and 6 have matching present status, the percentage is 6/15 = 40%
-</evaluation_criteria>
-
-<instructions>
-1. List all test cases from reference_test_cases
-2. For each reference test case, check if it exists in generated_output (FOUND or NOT FOUND)
-3. For FOUND test cases (common test cases), compare the "present" status
-4. Mark each common test case as MATCH (same present status) or MISMATCH (different present status)
-5. Calculate the percentage of MATCH test cases among common test cases
-6. Apply the scoring rule below
-</instructions>
-
-<scoring_rule>
-First list each reference test case and mark it as:
-- NOT FOUND (not in generated output)
-- MATCH (found in generated output with same "present" status)
-- MISMATCH (found in generated output but different "present" status)
-
-Then calculate:
-- Total reference test cases (all test cases in reference)
-- Common test cases (MATCH + MISMATCH)
-- Matching test cases (only MATCH)
-- Percentage = (MATCH / TOTAL reference test cases) × 100
-
-Score between 1 and 10 based on percentage of matching present status:
-- 0-9% = 1
-- 10-19% = 2
-- 20-29% = 3
-- 30-39% = 4
-- 40-49% = 5
-- 50-59% = 6
-- 60-69% = 7
-- 70-79% = 8
-- 80-89% = 9
-- 90-100% = 10
-
-Return your response in JSON format:
-{{
-    "analysis": "Your detailed analysis of each test case with NOT FOUND/MATCH/MISMATCH status",
-    "common_count": number_of_common_test_cases,
-    "matching_count": number_of_test_cases_with_same_present_status,
-    "total_reference_count": total_reference_test_cases,
-    "percentage": calculated_percentage,
-    "score": final_score_1_to_10
-}}
-</scoring_rule>"""
+Return one match per expected test case with:
+- expected_description: The expected test case description
+- generated_description: The best matching generated test case description
+- isSamePresent: true if semantic match AND present values are the same, false otherwise"""
 
     try:
-        # Call LLM for evaluation
-        response = llm.invoke(evaluation_prompt)
-        # Ensure response content is a string
-        response_text = (
-            response.content
-            if isinstance(response.content, str)
-            else str(response.content)
+        # Use structured output directly with BaseModel
+        llm_with_structure = llm.with_structured_output(TestCaseMatches)
+        response = cast(TestCaseMatches, llm_with_structure.invoke(evaluation_prompt))
+
+        # Access matches directly from structured response
+        matches_list = response.matches
+
+        # Count successful matches where isSamePresent is true
+        matched_count = sum(1 for m in matches_list if m.isSamePresent)
+        total_expected = len(expected_test_cases)
+        score = (matched_count / total_expected) * 10
+
+        # Build detailed comment
+        match_details = "\n".join(
+            f"  [{i + 1}] {'✓' if m.isSamePresent else '✗'} {m.expected_description[:80]}..."
+            for i, m in enumerate(matches_list)
         )
 
-        # Parse JSON response
-        # Try to extract JSON from markdown code blocks if present
-        if "```json" in response_text:
-            json_start = response_text.find("```json") + 7
-            json_end = response_text.find("```", json_start)
-            response_text = response_text[json_start:json_end].strip()
-        elif "```" in response_text:
-            json_start = response_text.find("```") + 3
-            json_end = response_text.find("```", json_start)
-            response_text = response_text[json_start:json_end].strip()
+        comment = f"""Test Case Coverage Assessment:
+- Total Expected: {total_expected}
+- Correctly Matched (same coverage): {matched_count}
+- Score: {matched_count}/{total_expected} ({(matched_count / total_expected) * 100:.1f}%)
 
-        # Fix unescaped newlines within string values
-        def fix_json_newlines(text: str) -> str:
-            """Escape literal newlines only within quoted strings."""
-            result = []
-            in_string = False
-            i = 0
-            while i < len(text):
-                char = text[i]
-                # Handle escaped characters
-                if char == "\\" and i + 1 < len(text):
-                    result.append(char)
-                    result.append(text[i + 1])
-                    i += 2
-                    continue
-                # Toggle string state on unescaped quotes
-                elif char == '"':
-                    in_string = not in_string
-                    result.append(char)
-                # Escape newlines only inside strings
-                elif char == "\n" and in_string:
-                    result.append("\\n")
-                else:
-                    result.append(char)
-                i += 1
-            return "".join(result)
-
-        response_text = fix_json_newlines(response_text)
-        result = json.loads(response_text)
-
-        score = result.get("score", 0)
-        percentage = result.get("percentage", 0)
-        common_count = result.get("common_count", 0)
-        matching_count = result.get("matching_count", 0)
-        total_reference_count = result.get("total_reference_count", 0)
-        analysis = result.get("analysis", "")
-
-        comment = (
-            f"Status Match: {matching_count}/{total_reference_count} "
-            f"({percentage:.1f}%) - Common: {common_count}\n{analysis}"
-        )
+Match Details:
+{match_details}"""
 
         return Evaluation(
             name="test_case_coverage",
@@ -207,7 +177,6 @@ Return your response in JSON format:
         )
 
     except Exception as e:
-        # Return error evaluation if something goes wrong
         return Evaluation(
             name="test_case_coverage",
             value=0,
