@@ -47,9 +47,9 @@ def run_all_experiments() -> None:
                     "scenario_path": sr["scenario_path"],
                     "test_cases": [
                         {
-                            "id": tc["id"],
-                            "description": tc["description"],
-                            "present": tc["present"],
+                            "id": tc.id,
+                            "description": tc.description,
+                            "present": tc.present,
                         }
                         for tc in sr["test_cases"]
                     ],
@@ -58,9 +58,9 @@ def run_all_experiments() -> None:
             ],
             "aggregated_test_cases": [
                 {
-                    "id": tc["id"],
-                    "description": tc["description"],
-                    "present": tc["present"],
+                    "id": tc.id,
+                    "description": tc.description,
+                    "present": tc.present,
                 }
                 for tc in result.get("aggregated_test_cases", [])
             ],

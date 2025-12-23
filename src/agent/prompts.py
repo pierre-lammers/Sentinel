@@ -1,5 +1,7 @@
 """Prompts for test coverage analysis."""
 
+from typing import Any
+
 # =============================================================================
 # Test Case Generation
 # =============================================================================
@@ -140,10 +142,32 @@ Verify if this test case has COMPLETE verification in the XML, or is it a false 
 
 
 # =============================================================================
+# Deep Agent Coverage Analysis
+# =============================================================================
+
+ANALYZE_SCENARIO_AGENT_SYSTEM = (
+    """You are a test coverage analyst with deep reasoning capabilities."""
+)
+
+ANALYZE_SCENARIO_AGENT_TASK = """Analyze this test scenario: {scenario_path} to understand what is really being tested.
+Pay particular attention to the code and not the description, which may be incorrect.
+When you finish your analysis about what is being tested in the scenario file, search
+in {test_cases_formatted} to see which test cases are covered by the scenario.
+For each test case, determine if it is COVERED or NOT_COVERED."""
+
+
+# =============================================================================
 # Helper functions
 # =============================================================================
 
 
-def format_test_cases_list(test_cases: list[str]) -> str:
-    """Format test cases as a bullet list."""
-    return "\n".join(f"- {tc}" for tc in test_cases)
+def format_test_cases_list(test_cases: list[Any]) -> str:
+    """Format test cases as a bullet list.
+
+    Args:
+        test_cases: List of Pydantic models with 'id' and 'description' attributes
+
+    Returns:
+        Formatted string with bullet points
+    """
+    return "\n".join(f"- {tc.id}: {tc.description}" for tc in test_cases)

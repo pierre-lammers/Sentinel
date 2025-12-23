@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 # =============================================================================
 # TypedDict Models (for State)
 # =============================================================================
+
+
+class GeneratedTestCaseDict(TypedDict):
+    """Generated test case (before coverage analysis)."""
+
+    id: str
+    description: str
 
 
 class TestCase(TypedDict):
@@ -33,7 +42,7 @@ class ScenarioResult(TypedDict):
 
     scenario_name: str
     scenario_path: str
-    test_cases: list[TestCase]
+    test_cases: list[Any]  # Pydantic models from structured output
 
 
 # =============================================================================
@@ -85,3 +94,19 @@ class FalsePositiveCheck(BaseModel):
         default_factory=list,
         description="List of missing verification elements",
     )
+
+
+class AgentCoverageTestCase(BaseModel):
+    """Test case with coverage analysis from deep agent."""
+
+    id: str = Field(description="Test case ID")
+    description: str = Field(description="Test case description")
+    present: bool = Field(
+        description="True if scenario contains actual test implementation for this case"
+    )
+
+
+class AgentCoverageAnalysis(BaseModel):
+    """Coverage analysis result from deep agent."""
+
+    test_cases: list[AgentCoverageTestCase]

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import operator
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any
 
 from typing_extensions import TypedDict
 
-from agent.models import FalsePositive, ScenarioResult, TestCase
+from agent.models import FalsePositive, ScenarioResult
 
 
 def _last_value(_: int, new: int) -> int:
@@ -35,12 +35,12 @@ class State(TypedDict, total=False):
     dataset_paths: list[str]
     current_scenario_index: Annotated[int, _last_value]
 
-    # Generated test cases (format: "TC-XXX: description")
-    generated_test_cases: list[str]
+    # Generated test cases (Pydantic models from structured output)
+    generated_test_cases: list[Any]
 
     # Results (append mode for loop accumulation)
     scenario_results: Annotated[list[ScenarioResult], operator.add]
-    aggregated_test_cases: list[TestCase]
+    aggregated_test_cases: list[Any]  # Pydantic models from structured output
     false_positives: Annotated[list[FalsePositive], operator.add]
 
     # Agent reasoning (for debugging/tracing)

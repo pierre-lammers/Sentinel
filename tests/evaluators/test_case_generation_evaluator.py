@@ -93,7 +93,9 @@ def test_case_generation_evaluator(
 
     # Format test cases for evaluation
     generated_text = "\n".join(
-        f"{i + 1}. {case}" if isinstance(case, str) else f"{i + 1}. {case}"
+        f"{i + 1}. {case}"
+        if isinstance(case, str)
+        else f"{i + 1}. {case.id}: {case.description}"
         for i, case in enumerate(generated_cases)
     )
     expected_text = "\n".join(
