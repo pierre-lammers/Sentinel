@@ -8,7 +8,7 @@ from typing import Annotated, Any
 
 from typing_extensions import TypedDict
 
-from agent.models import FalsePositive, ScenarioResult
+from agent.models import ScenarioResult
 
 
 def _last_value(_: int, new: int) -> int:
@@ -41,7 +41,6 @@ class State(TypedDict, total=False):
     # Results (append mode for loop accumulation)
     scenario_results: Annotated[list[ScenarioResult], operator.add]
     aggregated_test_cases: list[Any]  # Pydantic models from structured output
-    false_positives: Annotated[list[FalsePositive], operator.add]
 
     # Agent reasoning (for debugging/tracing)
     agent_reasoning: Annotated[list[str], operator.add]

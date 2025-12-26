@@ -20,16 +20,6 @@ class TestCase(TypedDict):
     present: bool
 
 
-class FalsePositive(TypedDict):
-    """False positive test case detected."""
-
-    scenario_name: str
-    scenario_path: str
-    test_case_id: str
-    test_case_description: str
-    reason: str
-
-
 class ScenarioResult(TypedDict):
     """Analysis result for a scenario."""
 
@@ -74,16 +64,3 @@ class CoverageAnalysis(BaseModel):
     """Coverage analysis result."""
 
     test_cases: list[CoverageTestCase]
-
-
-class FalsePositiveCheck(BaseModel):
-    """Verification result for a test case."""
-
-    is_false_positive: bool = Field(
-        description="True if scenario lacks actual verification despite claiming coverage"
-    )
-    reason: str = Field(description="Detailed explanation with XML evidence")
-    missing_elements: list[str] = Field(
-        default_factory=list,
-        description="List of missing verification elements",
-    )

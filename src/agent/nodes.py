@@ -13,8 +13,6 @@ from agent.deep_agent import retrieve_scenario_and_dataset_files
 from agent.llm_factory import get_mistral_client
 from agent.models import (
     CoverageAnalysis,
-    FalsePositive,
-    FalsePositiveCheck,
     ScenarioResult,
     TestCaseList,
 )
@@ -23,8 +21,6 @@ from agent.prompts import (
     GENERATE_TEST_CASES_USER,
     IDENTIFY_COVERAGE_SYSTEM,
     IDENTIFY_COVERAGE_USER,
-    VERIFY_FALSE_POSITIVE_SYSTEM,
-    VERIFY_FALSE_POSITIVE_USER,
     format_test_cases_list,
 )
 from agent.state import Context, State
@@ -109,10 +105,10 @@ async def generate_test_cases(
 
 
 async def analyze_scenario(state: State, runtime: Runtime[Context]) -> dict[str, Any]:
-    """Analyze current scenario: load, identify coverage, verify false positives.
+    """Analyze current scenario: load and identify coverage.
 
-    Combines loading, coverage identification, and false positive verification
-    into a single node for cleaner graph structure.
+    Combines loading and coverage identification into a single node
+    for cleaner graph structure.
     """
     if state.get("errors"):
         return {"current_scenario_index": state.get("current_scenario_index", 0) + 1}
@@ -145,7 +141,6 @@ async def analyze_scenario(state: State, runtime: Runtime[Context]) -> dict[str,
         }
 
     test_cases = coverage_result["test_cases"]
-    evidence_map = coverage_result["evidence_map"]
 
     # Build scenario result
     scenario_result: ScenarioResult = {
@@ -154,21 +149,8 @@ async def analyze_scenario(state: State, runtime: Runtime[Context]) -> dict[str,
         "test_cases": test_cases,
     }
 
-    # Verify false positives for covered test cases
-    present_tcs = [tc for tc in test_cases if tc.present]
-    false_positives = await _verify_false_positives(
-        present_tcs, evidence_map, state, ctx, scenario_result, content
-    )
-
-    # Update test cases based on false positive results
-    fp_ids = {fp["test_case_id"] for fp in false_positives}
-    for tc in scenario_result["test_cases"]:
-        if tc.id in fp_ids:
-            tc.present = False
-
     return {
         "scenario_results": [scenario_result],
-        "false_positives": false_positives,
         "current_scenario_index": idx + 1,
     }
 
@@ -214,78 +196,6 @@ async def _identify_coverage(
         return {"test_cases": parsed.test_cases, "evidence_map": evidence_map}
     except Exception as e:
         return {"error": f"Coverage analysis error: {e}"}
-
-
-async def _verify_false_positives(
-    present_tcs: list[Any],
-    evidence_map: dict[str, str],
-    state: State,
-    ctx: Context,
-    scenario_result: ScenarioResult,
-    content: str,
-) -> list[FalsePositive]:
-    """Verify covered test cases for false positives (parallelized)."""
-    if not present_tcs:
-        return []
-
-    tasks = [
-        _verify_single_tc(
-            tc, evidence_map.get(tc.id, ""), state, ctx, scenario_result, content
-        )
-        for tc in present_tcs
-    ]
-
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    return [r for r in results if isinstance(r, dict) and r is not None]
-
-
-async def _verify_single_tc(
-    tc: Any,
-    evidence: str,
-    state: State,
-    ctx: Context,
-    scenario_result: ScenarioResult,
-    content: str,
-) -> FalsePositive | None:
-    """Verify a single test case for false positive."""
-    client = get_mistral_client()
-
-    async def _make_api_call() -> Any:
-        return await client.chat.parse_async(
-            model=ctx.llm_model,
-            messages=[
-                SystemMessage(content=VERIFY_FALSE_POSITIVE_SYSTEM),
-                UserMessage(
-                    content=VERIFY_FALSE_POSITIVE_USER.format(
-                        req_name=state["req_name"],
-                        scenario_name=scenario_result["scenario_name"],
-                        test_case_id=tc.id,
-                        test_case_description=tc.description,
-                        evidence=evidence or "No evidence provided",
-                        scenario_content=content,
-                    )
-                ),
-            ],
-            temperature=ctx.temperature,
-            response_format=FalsePositiveCheck,
-        )
-
-    try:
-        response = await _retry_api_call(_make_api_call)
-
-        parsed = _get_parsed(response)
-        if parsed and parsed.is_false_positive:
-            return {
-                "scenario_name": scenario_result["scenario_name"],
-                "scenario_path": scenario_result["scenario_path"],
-                "test_case_id": tc.id,
-                "test_case_description": tc.description,
-                "reason": parsed.reason,
-            }
-        return None
-    except Exception:
-        return None
 
 
 # =============================================================================

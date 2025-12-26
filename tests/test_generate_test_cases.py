@@ -46,7 +46,6 @@ def run_experiment() -> None:
             "current_scenario_index": 0,
             "scenario_results": [],
             "aggregated_test_cases": [],
-            "false_positives": [],
             "errors": [],
         }
 

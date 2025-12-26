@@ -13,4 +13,3 @@ async def test_agent_simple_passthrough() -> None:
     res: Any = await graph.ainvoke(inputs)  # type: ignore[arg-type]
     assert res is not None
     assert "aggregated_test_cases" in res
-    assert "false_positives" in res
