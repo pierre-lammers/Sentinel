@@ -12,13 +12,6 @@ from typing_extensions import TypedDict
 # =============================================================================
 
 
-class GeneratedTestCaseDict(TypedDict):
-    """Generated test case (before coverage analysis)."""
-
-    id: str
-    description: str
-
-
 class TestCase(TypedDict):
     """Test case with coverage status."""
 
@@ -94,19 +87,3 @@ class FalsePositiveCheck(BaseModel):
         default_factory=list,
         description="List of missing verification elements",
     )
-
-
-class AgentCoverageTestCase(BaseModel):
-    """Test case with coverage analysis from deep agent."""
-
-    id: str = Field(description="Test case ID")
-    description: str = Field(description="Test case description")
-    present: bool = Field(
-        description="True if scenario contains actual test implementation for this case"
-    )
-
-
-class AgentCoverageAnalysis(BaseModel):
-    """Coverage analysis result from deep agent."""
-
-    test_cases: list[AgentCoverageTestCase]

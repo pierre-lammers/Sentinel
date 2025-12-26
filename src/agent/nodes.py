@@ -6,16 +6,12 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
-from deepagents import create_deep_agent
-from langchain.agents.structured_output import ToolStrategy
-from langchain_core.messages import HumanMessage
 from langgraph.runtime import Runtime
 from mistralai.models import SystemMessage, UserMessage
 
 from agent.deep_agent import retrieve_scenario_and_dataset_files
-from agent.llm_factory import get_llm, get_mistral_client
+from agent.llm_factory import get_mistral_client
 from agent.models import (
-    AgentCoverageAnalysis,
     CoverageAnalysis,
     FalsePositive,
     FalsePositiveCheck,
@@ -23,8 +19,6 @@ from agent.models import (
     TestCaseList,
 )
 from agent.prompts import (
-    ANALYZE_SCENARIO_AGENT_SYSTEM,
-    ANALYZE_SCENARIO_AGENT_TASK,
     GENERATE_TEST_CASES_SYSTEM,
     GENERATE_TEST_CASES_USER,
     IDENTIFY_COVERAGE_SYSTEM,
@@ -38,21 +32,6 @@ from agent.state import Context, State
 # Retry configuration for transient API errors
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5
-
-# =============================================================================
-# Coverage Agent
-# =============================================================================
-
-
-def get_coverage_agent(model: str = "codestral-2501") -> Any:
-    """Create a deep coverage analysis agent with reasoning capabilities."""
-    llm = get_llm(model=model, temperature=0.0)
-    return create_deep_agent(
-        model=llm,
-        system_prompt=ANALYZE_SCENARIO_AGENT_SYSTEM,
-        response_format=ToolStrategy(AgentCoverageAnalysis),
-    )
-
 
 # =============================================================================
 # Data Loading Nodes
@@ -127,67 +106,6 @@ async def generate_test_cases(
         return {"generated_test_cases": parsed.test_cases}
     except Exception as e:
         return {"errors": [f"Test case generation error: {e}"]}
-
-
-async def analyze_scenario_agent(
-    state: State, runtime: Runtime[Context]
-) -> dict[str, Any]:
-    """Analyze scenario using a ReAct agent with exploration tools.
-
-    The agent can read files, search patterns, parse XML, and explore
-    related files to determine test coverage with multi-step reasoning.
-    """
-    if state.get("errors"):
-        return {"current_scenario_index": state.get("current_scenario_index", 0) + 1}
-
-    paths = state.get("scenario_paths", [])
-    idx = state.get("current_scenario_index", 0)
-
-    if idx >= len(paths):
-        return {}
-
-    scenario_path = paths[idx]
-    ctx = runtime.context or Context()
-    scenario_name = Path(scenario_path).stem
-
-    # Create agent
-    agent = get_coverage_agent(model=ctx.llm_model)
-
-    # Format test cases for the prompt
-    generated_tcs = state.get("generated_test_cases", [])
-    test_cases_formatted = "\n".join(
-        [f"- {tc.id}: {tc.description}" for tc in generated_tcs]
-    )
-
-    task_prompt = ANALYZE_SCENARIO_AGENT_TASK.format(
-        scenario_path=scenario_path,
-        test_cases_formatted=test_cases_formatted,
-    )
-
-    try:
-        result = await agent.ainvoke({"messages": [HumanMessage(content=task_prompt)]})
-        final_message = result["messages"][-1].content
-
-        # Extract structured response from agent
-        coverage_analysis = result["structured_response"]
-
-        scenario_result: ScenarioResult = {
-            "scenario_name": scenario_name,
-            "scenario_path": scenario_path,
-            "test_cases": coverage_analysis.test_cases,
-        }
-
-        return {
-            "scenario_results": [scenario_result],
-            "current_scenario_index": idx + 1,
-            "agent_reasoning": [final_message],
-        }
-
-    except Exception as e:
-        return {
-            "errors": [f"Agent analysis error for {scenario_path}: {e}"],
-            "current_scenario_index": idx + 1,
-        }
 
 
 async def analyze_scenario(state: State, runtime: Runtime[Context]) -> dict[str, Any]:

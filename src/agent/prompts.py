@@ -142,21 +142,6 @@ Verify if this test case has COMPLETE verification in the XML, or is it a false 
 
 
 # =============================================================================
-# Deep Agent Coverage Analysis
-# =============================================================================
-
-ANALYZE_SCENARIO_AGENT_SYSTEM = (
-    """You are a test coverage analyst with deep reasoning capabilities."""
-)
-
-ANALYZE_SCENARIO_AGENT_TASK = """Analyze this test scenario: {scenario_path} to understand what is really being tested.
-Pay particular attention to the code and not the description, which may be incorrect.
-When you finish your analysis about what is being tested in the scenario file, search
-in {test_cases_formatted} to see which test cases are covered by the scenario.
-For each test case, determine if it is COVERED or NOT_COVERED."""
-
-
-# =============================================================================
 # Helper functions
 # =============================================================================
 
