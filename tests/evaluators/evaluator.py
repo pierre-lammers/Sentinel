@@ -1,6 +1,5 @@
 """Experiment evaluators for requirement evaluation using Langfuse datasets."""
 
-import json
 from typing import Any, cast
 
 from langchain.agents.structured_output import ToolStrategy

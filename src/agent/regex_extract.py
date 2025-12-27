@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 from dataclasses import dataclass, field
@@ -20,8 +21,16 @@ CACHE_DIR = Path(__file__).parent.parent.parent / ".cache" / "requirements"
 # Regex pattern for requirement IDs (e.g., SKYRADAR-ARR-044, SKYRADAR-CPDLC-047)
 REQ_PATTERN = re.compile(r"\b(SKYRADAR-[A-Z]+-\d+)\b")
 
-# Initialize persistent cache (thread-safe and process-safe)
-_cache = Cache(str(CACHE_DIR))
+# Lazy-initialized cache to avoid blocking on module import
+_cache: Cache | None = None
+
+
+def _get_cache() -> Cache:
+    """Get or initialize the cache (lazy initialization)."""
+    global _cache
+    if _cache is None:
+        _cache = Cache(str(CACHE_DIR))
+    return _cache
 
 
 def _get_pdf_hash() -> str:
@@ -66,18 +75,20 @@ def get_requirement(req_id: str) -> str | None:
     Returns:
         Requirement text or None if not found
     """
+    cache = _get_cache()
+
     # Check if PDF has changed
     current_hash = _get_pdf_hash()
-    cached_hash: str | None = _cache.get("_pdf_hash")
+    cached_hash: str | None = cache.get("_pdf_hash")
 
     if cached_hash != current_hash:
         # PDF changed - clear cache and update hash
-        _cache.clear()
-        _cache["_pdf_hash"] = current_hash
+        cache.clear()
+        cache["_pdf_hash"] = current_hash
 
     # Try cache first
-    if req_id in _cache:
-        cached_value: str = _cache[req_id]
+    if req_id in cache:
+        cached_value: str = cache[req_id]
         return cached_value
 
     # Cache miss - extract and store
@@ -86,7 +97,7 @@ def get_requirement(req_id: str) -> str | None:
 
     result = _extract_requirement(req_id, srs_text)
     if result is not None:
-        _cache[req_id] = result
+        cache[req_id] = result
 
     return result
 
@@ -110,7 +121,7 @@ async def retrieve_requirement_regex(state: RegexState) -> dict[str, Any]:
         Dict with requirement_description or errors
     """
     try:
-        result = get_requirement(state.req_name)
+        result = await asyncio.to_thread(get_requirement, state.req_name)
         if result is None:
             return {
                 "errors": [*state.errors, f"Requirement {state.req_name} not found"]

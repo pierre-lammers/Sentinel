@@ -228,6 +228,16 @@ def get_retry_middleware(
     backoff_factor: float | None = None,
     initial_delay: float | None = None,
 ) -> ModelRetryMiddleware:
+    """Create retry middleware with exponential backoff.
+
+    Args:
+        max_retries: Maximum number of retry attempts
+        backoff_factor: Exponential backoff multiplier
+        initial_delay: Initial delay in seconds before first retry
+
+    Returns:
+        Configured ModelRetryMiddleware instance
+    """
     if max_retries is None:
         max_retries = LLMConfig.DEFAULT_MAX_RETRIES
     if backoff_factor is None:
@@ -254,6 +264,23 @@ def get_agent(
     initial_delay: float | None = None,
     additional_middleware: list[Any] | None = None,
 ) -> Any:
+    """Create a LangChain agent with retry middleware and optional tools.
+
+    Args:
+        model: Model name/ID to use
+        temperature: Model temperature for generation
+        provider: LLM provider to use
+        tools: List of tools to provide to the agent
+        response_format: Structured output format
+        system_prompt: System prompt for the agent
+        max_retries: Maximum number of retry attempts
+        backoff_factor: Exponential backoff multiplier
+        initial_delay: Initial delay in seconds before first retry
+        additional_middleware: Additional middleware to apply
+
+    Returns:
+        Configured agent instance
+    """
     # Get the base LLM instance
     llm = get_llm(model=model, temperature=temperature, provider=provider)
 
