@@ -3,10 +3,11 @@
 import json
 from typing import Any, cast
 
+from langchain.agents.structured_output import ToolStrategy
 from langfuse import Evaluation
 from pydantic import BaseModel, Field
 
-from agent.llm_factory import get_llm
+from agent.llm_factory import LLMProvider, get_agent
 
 
 class TestCaseMatch(BaseModel):
@@ -31,12 +32,84 @@ class TestCaseMatches(BaseModel):
     )
 
 
-def test_case_coverage_evaluator(
+EVALUATOR_SYSTEM_PROMPT = """You are a test case coverage evaluator."""
+
+
+def create_test_case_evaluator_agent(
+    model: str = "codestral-2501",
+    temperature: float = 0.0,
+    provider: LLMProvider | None = None,
+) -> Any:
+    """Create an agent for evaluating test case coverage with structured output.
+
+    Uses ModelRetryMiddleware for automatic retry with exponential backoff.
+    """
+    agent = get_agent(
+        model=model,
+        temperature=temperature,
+        provider=provider,
+        system_prompt=EVALUATOR_SYSTEM_PROMPT,
+        response_format=ToolStrategy(TestCaseMatches),
+        max_retries=5,  # Higher retry count for rate limits
+        initial_delay=10.0,  # Longer initial delay for rate limits
+    )
+
+    return agent
+
+
+async def evaluate_test_cases_async(
+    output_test_cases: list[Any],
+    expected_test_cases: list[Any],
+    model: str = "codestral-2501",
+    provider: LLMProvider | None = None,
+) -> TestCaseMatches:
+    """Evaluate test cases using the deep agent.
+
+    Args:
+        output_test_cases: Generated test cases to evaluate.
+        expected_test_cases: Expected test cases to compare against.
+        model: Model name to use for evaluation.
+        provider: LLM provider to use (Mistral, OpenAI, or Anthropic).
+
+    Returns:
+        TestCaseMatches object containing matches for each expected test case.
+    """
+    agent = create_test_case_evaluator_agent(model=model, provider=provider)
+
+    evaluation_prompt = f"""You are evaluating test case coverage by matching generated test cases to expected test cases.
+    <expected_test_cases>
+    {expected_test_cases}
+    </expected_test_cases>
+
+    <output_test_cases>
+    {output_test_cases}
+    </output_test_cases>
+
+    For each expected test case:
+    1. Find the generated test case that describes the SAME test scenario (semantic match)
+    2. Compare their 'present' field values
+    3. Set isSamePresent to true ONLY if both descriptions match semantically AND present values are identical
+
+    Return one match per expected test case with:
+    - expected_description: The expected test case description
+    - generated_description: The best matching generated test case description
+    - isSamePresent: true if semantic match AND present values are the same, false otherwise"""
+
+    # ModelRetryMiddleware handles retries automatically
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": evaluation_prompt}]}
+    )
+
+    # Extract the structured output from the final message
+    return cast(TestCaseMatches, result["structured_response"])
+
+
+async def test_case_coverage_evaluator(
     *, output: Any, expected_output: Any, **kwargs: Any
 ) -> Evaluation:
     """Evaluates test case coverage by comparing generated vs expected test cases.
 
-    Uses an LLM to semantically match test case descriptions between output and expected_output.
+    Uses an LLM agent to semantically match test case descriptions between output and expected_output.
 
     Args:
         output: Graph output dict with 'aggregated_test_cases' field
@@ -46,38 +119,10 @@ def test_case_coverage_evaluator(
     Returns:
         Evaluation object with score (0-10) and detailed comment
     """
-    llm = get_llm(temperature=0)
-
-    # Parse output and expected_output if they are strings
-    if isinstance(output, str):
-        try:
-            output = json.loads(output)
-        except json.JSONDecodeError:
-            output = {}
-    if isinstance(expected_output, str):
-        try:
-            expected_output = json.loads(expected_output)
-        except json.JSONDecodeError:
-            expected_output = {}
 
     # Extract aggregated_test_cases from dictionaries
-    if isinstance(output, dict):
-        output_test_cases = output.get("aggregated_test_cases", [])
-    else:
-        output_test_cases = []
-
-    if isinstance(expected_output, dict):
-        expected_test_cases = expected_output.get("aggregated_test_cases", [])
-    else:
-        expected_test_cases = []
-
-    # Handle empty cases
-    if not expected_test_cases:
-        return Evaluation(
-            name="test_case_coverage",
-            value=0,
-            comment="No expected test cases in aggregated_test_cases",
-        )
+    output_test_cases = output.get("aggregated_test_cases", [])
+    expected_test_cases = expected_output.get("aggregated_test_cases", [])
 
     if not output_test_cases:
         return Evaluation(
@@ -86,67 +131,11 @@ def test_case_coverage_evaluator(
             comment="No generated test cases in aggregated_test_cases",
         )
 
-    # Normalize present field (handle boolean and string values)
-    def normalize_present(value: Any) -> str:
-        """Normalize present field to string for comparison."""
-        if isinstance(value, bool):
-            return str(value).lower()
-        return str(value).lower()
-
-    # Build test case info with normalized present field
-    expected_with_present = [
-        {
-            "description": tc.get("description", str(tc)),
-            "present": normalize_present(tc.get("present")),
-            "id": tc.get("id", ""),
-        }
-        for tc in expected_test_cases
-    ]
-
-    output_with_present = [
-        {
-            "description": tc.get("description", str(tc)),
-            "present": normalize_present(tc.get("present")),
-            "id": tc.get("id", ""),
-        }
-        for tc in output_test_cases
-    ]
-
-    # Format for LLM with present field info
-    expected_text = "\n".join(
-        f"{i + 1}. {tc['description']} [present={tc['present']}]"
-        for i, tc in enumerate(expected_with_present)
-    )
-    output_text = "\n".join(
-        f"{i + 1}. {tc['description']} [present={tc['present']}]"
-        for i, tc in enumerate(output_with_present)
-    )
-
-    # Create evaluation prompt
-    evaluation_prompt = f"""You are evaluating test case coverage by matching generated test cases to expected test cases.
-
-<expected_test_cases>
-{expected_text}
-</expected_test_cases>
-
-<generated_test_cases>
-{output_text}
-</generated_test_cases>
-
-For each expected test case:
-1. Find the generated test case that describes the SAME test scenario (semantic match)
-2. Compare their 'present' field values
-3. Set isSamePresent to true ONLY if both descriptions match semantically AND present values are identical
-
-Return one match per expected test case with:
-- expected_description: The expected test case description
-- generated_description: The best matching generated test case description
-- isSamePresent: true if semantic match AND present values are the same, false otherwise"""
-
     try:
-        # Use structured output directly with BaseModel
-        llm_with_structure = llm.with_structured_output(TestCaseMatches)
-        response = cast(TestCaseMatches, llm_with_structure.invoke(evaluation_prompt))
+        # Run the async evaluation using the deep agent
+        response = await evaluate_test_cases_async(
+            output_test_cases, expected_test_cases
+        )
 
         # Access matches directly from structured response
         matches_list = response.matches
@@ -163,12 +152,12 @@ Return one match per expected test case with:
         )
 
         comment = f"""Test Case Coverage Assessment:
-- Total Expected: {total_expected}
-- Correctly Matched (same coverage): {matched_count}
-- Score: {matched_count}/{total_expected} ({(matched_count / total_expected) * 100:.1f}%)
+                    - Total Expected: {total_expected}
+                    - Correctly Matched (same coverage): {matched_count}
+                    - Score: {matched_count}/{total_expected} ({(matched_count / total_expected) * 100:.1f}%)
 
-Match Details:
-{match_details}"""
+                    Match Details:
+                    {match_details}"""
 
         return Evaluation(
             name="test_case_coverage",

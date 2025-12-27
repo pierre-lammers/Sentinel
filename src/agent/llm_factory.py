@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import os
 from enum import Enum
+from typing import Any
 
+from langchain.agents import create_agent
+from langchain.agents.middleware import ModelRetryMiddleware
 from langchain_core.language_models import BaseChatModel
 from langchain_mistralai import ChatMistralAI
 from mistralai import Mistral
@@ -38,6 +41,11 @@ class LLMConfig:
 
     # Default temperature
     DEFAULT_TEMPERATURE: float = 0.0
+
+    # Retry configuration (following ModelRetryMiddleware pattern)
+    DEFAULT_MAX_RETRIES: int = 3
+    DEFAULT_BACKOFF_FACTOR: float = 2.0
+    DEFAULT_INITIAL_DELAY: float = 1.0
 
     @classmethod
     def get_provider(cls) -> LLMProvider:
@@ -213,3 +221,61 @@ def get_mistral_client() -> Mistral:
     if not api_key:
         raise ValueError("MISTRAL_API_KEY not set")
     return Mistral(api_key=api_key)
+
+
+def get_retry_middleware(
+    max_retries: int | None = None,
+    backoff_factor: float | None = None,
+    initial_delay: float | None = None,
+) -> ModelRetryMiddleware:
+    if max_retries is None:
+        max_retries = LLMConfig.DEFAULT_MAX_RETRIES
+    if backoff_factor is None:
+        backoff_factor = LLMConfig.DEFAULT_BACKOFF_FACTOR
+    if initial_delay is None:
+        initial_delay = LLMConfig.DEFAULT_INITIAL_DELAY
+
+    return ModelRetryMiddleware(
+        max_retries=max_retries,
+        backoff_factor=backoff_factor,
+        initial_delay=initial_delay,
+    )
+
+
+def get_agent(
+    model: str | None = None,
+    temperature: float | None = None,
+    provider: LLMProvider | None = None,
+    tools: list[Any] | None = None,
+    response_format: Any | None = None,
+    system_prompt: str | None = None,
+    max_retries: int | None = None,
+    backoff_factor: float | None = None,
+    initial_delay: float | None = None,
+    additional_middleware: list[Any] | None = None,
+) -> Any:
+    # Get the base LLM instance
+    llm = get_llm(model=model, temperature=temperature, provider=provider)
+
+    # Create the retry middleware using the dedicated function
+    retry_middleware = get_retry_middleware(
+        max_retries=max_retries,
+        backoff_factor=backoff_factor,
+        initial_delay=initial_delay,
+    )
+
+    # Combine retry middleware with additional middleware
+    middleware = [retry_middleware]
+    if additional_middleware:
+        middleware.extend(additional_middleware)
+
+    # Create the agent with all middleware
+    agent = create_agent(
+        model=llm,
+        tools=tools or [],
+        middleware=middleware,
+        response_format=response_format,
+        system_prompt=system_prompt,
+    )
+
+    return agent

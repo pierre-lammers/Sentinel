@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from langchain.agents.structured_output import ToolStrategy
 from pydantic import BaseModel, Field, field_validator
 
-from agent.llm_factory import get_llm
+from agent.llm_factory import get_llm, get_retry_middleware
 
 DATASET_PATH = Path(__file__).parent.parent.parent / "dataset"
 
@@ -118,15 +118,30 @@ Be thorough: examine the content of each file carefully to make an accurate clas
 def create_dataset_explorer_agent(
     model: str = "codestral-2501",
     temperature: float = 0.0,
+    middleware: list[Any] | None = None,
 ) -> Any:
-    """Create a deep agent for exploring the test dataset with structured output."""
+    """Create a deep agent for exploring the test dataset with structured output.
+
+    Args:
+        model: Model name to use.
+        temperature: Temperature for the model.
+        middleware: List of middleware to use. If None, uses default retry middleware.
+
+    Returns:
+        Configured deep agent with retry middleware.
+    """
     llm = get_llm(model=model, temperature=temperature)
+
+    # Use default retry middleware if none provided
+    if middleware is None:
+        middleware = [get_retry_middleware()]
 
     agent = create_deep_agent(
         model=llm,
         backend=FilesystemBackend(root_dir=str(DATASET_PATH), virtual_mode=False),
         system_prompt=SYSTEM_PROMPT,
         response_format=ToolStrategy(RequirementFiles),
+        middleware=middleware,
     )
 
     return agent
@@ -153,15 +168,30 @@ async def find_requirement_files(
 def create_file_analyzer_agent(
     model: str = "codestral-2501",
     temperature: float = 0.0,
+    middleware: list[Any] | None = None,
 ) -> Any:
-    """Create a deep agent for analyzing and classifying files as scenarios or datasets."""
+    """Create a deep agent for analyzing and classifying files as scenarios or datasets.
+
+    Args:
+        model: Model name to use.
+        temperature: Temperature for the model.
+        middleware: List of middleware to use. If None, uses default retry middleware.
+
+    Returns:
+        Configured deep agent with retry middleware.
+    """
     llm = get_llm(model=model, temperature=temperature)
+
+    # Use default retry middleware if none provided
+    if middleware is None:
+        middleware = [get_retry_middleware()]
 
     agent = create_deep_agent(
         model=llm,
         backend=FilesystemBackend(root_dir=str(DATASET_PATH), virtual_mode=False),
         system_prompt=ANALYZER_SYSTEM_PROMPT,
         response_format=ToolStrategy(ScenarioDatasetAnalysis),
+        middleware=middleware,
     )
 
     return agent

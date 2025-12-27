@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
+from langchain.agents.structured_output import ToolStrategy
 from langgraph.runtime import Runtime
-from mistralai.models import SystemMessage, UserMessage
 
 from agent.deep_agent import retrieve_scenario_and_dataset_files
-from agent.llm_factory import get_mistral_client
+from agent.llm_factory import get_agent
 from agent.models import (
     CoverageAnalysis,
     ScenarioResult,
@@ -24,10 +24,6 @@ from agent.prompts import (
     format_test_cases_list,
 )
 from agent.state import Context, State
-
-# Retry configuration for transient API errors
-MAX_RETRIES = 3
-RETRY_DELAY_SECONDS = 5
 
 # =============================================================================
 # Data Loading Nodes
@@ -67,35 +63,42 @@ async def retrieve_requirement(
 async def generate_test_cases(
     state: State, runtime: Runtime[Context]
 ) -> dict[str, Any]:
-    """Generate test cases for the requirement using LLM."""
+    """Generate test cases for the requirement using LLM.
+
+    Uses ModelRetryMiddleware for automatic retry with exponential backoff.
+    """
     if state.get("errors"):
         return {}
 
     ctx = runtime.context or Context()
-    client = get_mistral_client()
 
-    async def _make_api_call() -> Any:
-        return await client.chat.parse_async(
-            model=ctx.llm_model,
-            messages=[
-                SystemMessage(content=GENERATE_TEST_CASES_SYSTEM),
-                UserMessage(
-                    content=GENERATE_TEST_CASES_USER.format(
-                        req_name=state["req_name"],
-                        requirement_description=state.get(
-                            "requirement_description", ""
-                        ),
-                    )
-                ),
-            ],
-            temperature=ctx.temperature,
-            response_format=TestCaseList,
-        )
+    # Create agent with structured output and retry middleware
+    agent = get_agent(
+        model=ctx.llm_model,
+        temperature=ctx.temperature,
+        response_format=ToolStrategy(TestCaseList),
+        system_prompt=GENERATE_TEST_CASES_SYSTEM,
+    )
 
     try:
-        response = await _retry_api_call(_make_api_call)
+        # ModelRetryMiddleware handles retries automatically
+        result = await agent.ainvoke(
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": GENERATE_TEST_CASES_USER.format(
+                            req_name=state["req_name"],
+                            requirement_description=state.get(
+                                "requirement_description", ""
+                            ),
+                        ),
+                    }
+                ]
+            }
+        )
 
-        parsed = _get_parsed(response)
+        parsed = cast(TestCaseList, result.get("structured_response"))
         if not parsed:
             return {"errors": ["No parsed response from LLM"]}
 
@@ -158,36 +161,42 @@ async def analyze_scenario(state: State, runtime: Runtime[Context]) -> dict[str,
 async def _identify_coverage(
     state: State, ctx: Context, scenario_name: str, content: str
 ) -> dict[str, Any]:
-    """Identify which test cases are covered by the scenario."""
+    """Identify which test cases are covered by the scenario.
+
+    Uses ModelRetryMiddleware for automatic retry with exponential backoff.
+    """
     if not state.get("generated_test_cases"):
         return {"test_cases": [], "evidence_map": {}}
 
-    client = get_mistral_client()
-
-    async def _make_api_call() -> Any:
-        return await client.chat.parse_async(
-            model=ctx.llm_model,
-            messages=[
-                SystemMessage(content=IDENTIFY_COVERAGE_SYSTEM),
-                UserMessage(
-                    content=IDENTIFY_COVERAGE_USER.format(
-                        req_name=state["req_name"],
-                        scenario_name=scenario_name,
-                        test_cases_list=format_test_cases_list(
-                            state["generated_test_cases"]
-                        ),
-                        scenario_content=content,
-                    )
-                ),
-            ],
-            temperature=ctx.temperature,
-            response_format=CoverageAnalysis,
-        )
+    # Create agent with structured output and retry middleware
+    agent = get_agent(
+        model=ctx.llm_model,
+        temperature=ctx.temperature,
+        response_format=ToolStrategy(CoverageAnalysis),
+        system_prompt=IDENTIFY_COVERAGE_SYSTEM,
+    )
 
     try:
-        response = await _retry_api_call(_make_api_call)
+        # ModelRetryMiddleware handles retries automatically
+        result = await agent.ainvoke(
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": IDENTIFY_COVERAGE_USER.format(
+                            req_name=state["req_name"],
+                            scenario_name=scenario_name,
+                            test_cases_list=format_test_cases_list(
+                                state["generated_test_cases"]
+                            ),
+                            scenario_content=content,
+                        ),
+                    }
+                ]
+            }
+        )
 
-        parsed = _get_parsed(response)
+        parsed = cast(CoverageAnalysis, result.get("structured_response"))
         if not parsed:
             return {"error": "No parsed response from coverage LLM"}
 
@@ -236,51 +245,3 @@ async def aggregate_test_cases(
                 aggregated[tc_id].present = True
 
     return {"aggregated_test_cases": list(aggregated.values())}
-
-
-# =============================================================================
-# Helpers
-# =============================================================================
-
-
-async def _retry_api_call(
-    api_call: Any,
-    max_retries: int = MAX_RETRIES,
-    delay: float = RETRY_DELAY_SECONDS,
-) -> Any:
-    """Retry an async API call with exponential backoff.
-
-    Args:
-        api_call: Async callable to execute
-        max_retries: Maximum number of retry attempts
-        delay: Initial delay between retries in seconds
-
-    Returns:
-        API response
-
-    Raises:
-        Last exception if all retries fail
-    """
-    last_exception = None
-    for attempt in range(max_retries):
-        try:
-            return await api_call()
-        except Exception as e:
-            last_exception = e
-            error_str = str(e)
-            # Only retry on 503 or transient errors
-            if "503" in error_str or "Service unavailable" in error_str:
-                if attempt < max_retries - 1:
-                    wait_time = delay * (2**attempt)  # Exponential backoff
-                    await asyncio.sleep(wait_time)
-                    continue
-            # Re-raise non-retryable errors immediately
-            raise
-    raise last_exception  # type: ignore[misc]
-
-
-def _get_parsed(response: Any) -> Any:
-    """Extract parsed response from Mistral response."""
-    if not response.choices or not response.choices[0].message:
-        return None
-    return response.choices[0].message.parsed
