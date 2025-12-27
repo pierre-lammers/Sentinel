@@ -76,6 +76,14 @@ ignore_missing_imports = true
 module = "deepagents"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "langchain_openai"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "langchain_anthropic"
+ignore_missing_imports = true
+
 [dependency-groups]
 dev = [
     "anyio>=4.7.0",

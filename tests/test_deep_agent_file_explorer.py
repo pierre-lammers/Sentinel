@@ -4,7 +4,10 @@ import asyncio
 
 from dotenv import load_dotenv
 
-from agent.deep_agent import analyze_requirement_files, find_requirement_files
+from agent.deep_agent_file_explorer import (
+    analyze_requirement_files,
+    find_requirement_files,
+)
 
 # Load environment variables
 load_dotenv()

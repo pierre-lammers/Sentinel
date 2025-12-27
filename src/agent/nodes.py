@@ -9,7 +9,7 @@ from typing import Any, cast
 from langchain.agents.structured_output import ToolStrategy
 from langgraph.runtime import Runtime
 
-from agent.deep_agent import retrieve_scenario_and_dataset_files
+from agent.deep_agent_file_explorer import retrieve_scenario_and_dataset_files
 from agent.llm_factory import get_agent
 from agent.models import (
     CoverageAnalysis,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRetryMiddleware
@@ -165,10 +165,13 @@ def _get_openai_llm(model: str, temperature: float) -> BaseChatModel:
     if not api_key:
         raise ValueError("OPENAI_API_KEY not set")
 
-    return ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        api_key=SecretStr(api_key),
+    return cast(
+        BaseChatModel,
+        ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            api_key=SecretStr(api_key),
+        ),
     )
 
 
