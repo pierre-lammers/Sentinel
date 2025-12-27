@@ -1,14 +1,15 @@
 from typing import Any
 
-import pytest  # type: ignore[import-not-found]
+import pytest
 
 from agent import graph
 
 pytestmark = pytest.mark.anyio
 
 
-@pytest.mark.langsmith  # type: ignore[untyped-decorator]
+@pytest.mark.langsmith
 async def test_agent_simple_passthrough() -> None:
-    inputs = {"req_id": "REQ-001", "test_scenario": "<scenario/>"}
+    inputs = {"req_name": "REQ-001"}
     res: Any = await graph.ainvoke(inputs)  # type: ignore[arg-type]
     assert res is not None
+    assert "aggregated_test_cases" in res

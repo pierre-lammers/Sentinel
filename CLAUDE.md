@@ -169,3 +169,11 @@ This should output no errors before considering a task complete. If there are li
 3. Only then mark the task as done
 
 **Important**: Before committing or creating a pull request, always run both `make lint` and `make codespell` to ensure code quality and spelling correctness.
+
+## Documentation
+
+### Generate PDF from Markdown
+
+```bash
+cd dataset && pandoc SRS.md -o SRS.pdf --pdf-engine=xelatex
+```

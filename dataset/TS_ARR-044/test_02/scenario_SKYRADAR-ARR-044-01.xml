@@ -60,10 +60,10 @@ All conditions except C1 are met for automatic sequence adjustment."
 	</TrackUpdates>
 
 	<TestResult resultTimeInMilliSec="6000"
-	            resultDescription="Baseline: AMAN status is DEGRADED, sequence adjustment should NOT be generated."
+	            resultDescription="Baseline: AMAN status is DEGRADED (condition 1 NOT satisfied), alert SHOULD be generated for manual intervention."
 	            nextActionComment="AMAN system status is transitioned to OPERATIONAL at time 8000."
-	            nextActionDescription="With AMAN status OPERATIONAL and all other conditions met, sequence adjustment alert should be generated.">
-		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	            nextActionDescription="With AMAN status OPERATIONAL and all other conditions met, NO alert should be generated (automatic sequence adjustment occurs).">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true"/>
 	</TestResult>
 
 	<!-- TRANSITION: Change AMAN status to OPERATIONAL -->
@@ -87,12 +87,10 @@ All conditions except C1 are met for automatic sequence adjustment."
 	</TrackUpdates>
 
 	<TestResult resultTimeInMilliSec="11000"
-	            resultDescription="AMAN status is OPERATIONAL, sequence adjustment SHOULD be generated."
+	            resultDescription="AMAN status is OPERATIONAL (all conditions satisfied), NO alert should be generated (automatic sequence adjustment occurs)."
 	            nextActionComment="AMAN system status is transitioned to UNAVAILABLE at time 13000."
-	            nextActionDescription="With AMAN status UNAVAILABLE, sequence adjustment alert should NOT be generated.">
-		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true">
-			<AMANAlert currentPosition="5" newPosition="3" delaySeconds="185"/>
-		</Alerts>
+	            nextActionDescription="With AMAN status UNAVAILABLE (condition 1 NOT satisfied), alert SHOULD be generated for manual intervention.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
 	</TestResult>
 
 	<!-- TRANSITION: Change AMAN status to UNAVAILABLE -->
@@ -116,8 +114,8 @@ All conditions except C1 are met for automatic sequence adjustment."
 	</TrackUpdates>
 
 	<TestResult resultTimeInMilliSec="16000"
-	            resultDescription="AMAN status is UNAVAILABLE, sequence adjustment should NOT be generated.">
-		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="false"/>
+	            resultDescription="AMAN status is UNAVAILABLE (condition 1 NOT satisfied), alert SHOULD be generated for manual intervention.">
+		<Alerts alertType="AMAN_SEQUENCE_ADJUST" trackNum="1" alertGenerated="true"/>
 	</TestResult>
 
 </UpdateRoot>

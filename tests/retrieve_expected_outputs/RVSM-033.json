@@ -1,0 +1,4 @@
+{
+  "req_name": "SKYRADAR-RVSM-033",
+  "requirement_description": "SKYRADAR shall generate RVSM (Reduced Vertical Separation Minimum) Non-Approval alerts for tracks if ALL of the following conditions are met:\n• The RVSM monitoring system status is equal to OPERATIONAL, and\n• The track flight level is within RVSM airspace range (between CSP: RVSM_MIN_FL and CSP: RVSM_MAX_FL), and\n• The track RVSM approval status indicator is set to NOT_APPROVED or UNKNOWN, and\n• The track altitude source quality indicator is equal to HIGH or MEDIUM, and\n• The track is located within an RVSM designated airspace zone where monitoring is active, and\n• The track flight plan indicates IFR (Instrument Flight Rules) operation, and\n• The flag RVSM_EMERGENCY_EXCEPTION is set to false or the track's transponder squawk code is NOT in the emergency range (7500, 7600, 7700)."
+}

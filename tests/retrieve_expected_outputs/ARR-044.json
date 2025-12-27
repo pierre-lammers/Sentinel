@@ -1,0 +1,4 @@
+{
+  "req_name": "SKYRADAR-ARR-044",
+  "requirement_description": "SKYRADAR shall automatically adjust arrival sequence positions for tracks if ALL of the following conditions are met:\n• The AMAN (Arrival Manager) system status is equal to OPERATIONAL, and\n• The track is in ARRIVAL flight phase with valid time-to-threshold prediction, and\n• The track is located within the Extended Terminal Maneuvering Area (E-TMA) boundary defined for the arrival airport, and\n• The calculated arrival delay is greater than CSP: AMAN_MIN_DELAY_THRESHOLD (typically 120 seconds), and\n• The track has an assigned arrival runway with active AMAN sequencing enabled, and\n• The potential sequence position change would not violate minimum time-based separation with preceding or following traffic (VSP: TBS_MIN_SEPARATION_TIME)."
+}

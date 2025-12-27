@@ -1,8 +1,8 @@
 from typing import Literal
 
-import pytest  # type: ignore[import-not-found]
+import pytest
 
 
-@pytest.fixture(scope="session")  # type: ignore[untyped-decorator]
+@pytest.fixture(scope="session")
 def anyio_backend() -> Literal["asyncio"]:
     return "asyncio"

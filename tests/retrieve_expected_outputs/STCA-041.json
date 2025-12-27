@@ -1,0 +1,4 @@
+{
+  "req_name": "SKYRADAR-STCA-041",
+  "requirement_description": "SKYRADAR shall flag STCA conflicts as suppressed for tracks located in NOZ if:\n• The associated NTZ area is active, and\n• The status of the NTZ areas manager is equal to OPERATIONAL, and\n• The heading gap between each aircraft and the runway axis is lower than CSP: MAX_DELTA_HEADING, and\n• The current distance between the aircraft is kept above VSP: MinimalDistance known as safety distance, and\n• Each track is located within a different NOZ associated with an offline defined \"parallel approach pair\" of runways, and\n• The \"parallel approach pair\" is in INDEPENDENT mode, and\n• The flag STCA_PARALLEL_APP_FPL_CHECK_FLAG is set to false or the runway of each track's coupled FPL (if assigned) matches the runway linked to the NOZ where the track is located."
+}
